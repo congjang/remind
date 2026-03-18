@@ -1,0 +1,508 @@
+{
+  "tokens": {
+    "typography": {
+      "fontFamily": {
+        "default": {
+          "value": "pretendard"
+        }
+      },
+      "fontSize": {
+        "headline": {
+          "L": {
+            "value": 32,
+            "unit": "px"
+          },
+          "M": {
+            "value": 28,
+            "unit": "px"
+          },
+          "S": {
+            "value": 24,
+            "unit": "px"
+          },
+          "XS": {
+            "value": 20,
+            "unit": "px"
+          }
+        },
+        "title": {
+          "L": {
+            "value": 18,
+            "unit": "px"
+          },
+          "M": {
+            "value": 16,
+            "unit": "px"
+          },
+          "S": {
+            "value": 14,
+            "unit": "px"
+          },
+          "XS": {
+            "value": 12,
+            "unit": "px"
+          }
+        },
+        "body": {
+          "L": {
+            "value": 18,
+            "unit": "px"
+          },
+          "M": {
+            "value": 16,
+            "unit": "px"
+          },
+          "S": {
+            "value": 14,
+            "unit": "px"
+          },
+          "XS": {
+            "value": 12,
+            "unit": "px"
+          }
+        },
+        "label": {
+          "L": {
+            "value": 18,
+            "unit": "px"
+          },
+          "M": {
+            "value": 16,
+            "unit": "px"
+          },
+          "S": {
+            "value": 14,
+            "unit": "px"
+          },
+          "XS": {
+            "value": 12,
+            "unit": "px"
+          }
+        },
+        "caption": {
+          "M": {
+            "value": 10,
+            "unit": "px"
+          }
+        }
+      },
+      "fontWeight": {
+        "headline": {
+          "L": {
+            "value": 700
+          },
+          "S": {
+            "value": 700
+          },
+          "XS": {
+            "value": 700
+          }
+        },
+        "title": {
+          "L": {
+            "value": 700
+          },
+          "M": {
+            "value": 700
+          },
+          "S": {
+            "value": 700
+          },
+          "XS": {
+            "value": 700
+          }
+        },
+        "body": {
+          "L": {
+            "value": 600
+          },
+          "M": {
+            "value": 600
+          },
+          "S": {
+            "value": 600
+          },
+          "XS": {
+            "value": 600
+          }
+        },
+        "label": {
+          "L": {
+            "value": 700
+          },
+          "M": {
+            "value": 600
+          },
+          "S": {
+            "value": 600
+          },
+          "XS": {
+            "value": 600
+          }
+        },
+        "caption": {
+          "M": {
+            "value": 400
+          }
+        }
+      },
+      "lineHeight": {
+        "headline": {
+          "value": 1.2999999523162842
+        },
+        "title": {
+          "value": 1.600000023841858
+        },
+        "body": {
+          "value": 1.600000023841858
+        },
+        "label": {
+          "value": 1.2000000476837158
+        },
+        "caption": {
+          "value": 1.2000000476837158
+        }
+      },
+      "letterSpacing": {
+        "default": {
+          "value": 0
+        }
+      },
+      "styles": {
+        "headline": {
+          "L": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/headline/L"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/headline/L"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/headline"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "M": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/headline/M"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/headline/L"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/headline"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "S": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/headline/S"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/headline/S"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/headline"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "XS": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/headline/XS"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/headline/XS"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/headline"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          }
+        },
+        "title": {
+          "L": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/title/L"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/title/L"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/title"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "M": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/title/M"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/title/M"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/title"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "S": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/title/S"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/title/S"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/title"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "XS": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/title/XS"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/title/XS"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/title"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          }
+        },
+        "body": {
+          "L": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/body/L"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/body/L"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/body"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "M": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/body/M"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/body/M"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/body"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "S": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/body/S"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/body/S"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/body"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "XS": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/body/XS"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/body/XS"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/body"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          }
+        },
+        "label": {
+          "L": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/label/L"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/label/L"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/label"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "M": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/label/M"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/label/M"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/label"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "S": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/label/S"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/label/S"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/label"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          },
+          "XS": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/label/XS"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/label/XS"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/label"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          }
+        },
+        "caption": {
+          "M": {
+            "value": {
+              "fontFamily": {
+                "$ref": "#/tokens/typography/fontFamily/default"
+              },
+              "fontSize": {
+                "$ref": "#/tokens/typography/fontSize/caption/M"
+              },
+              "fontWeight": {
+                "$ref": "#/tokens/typography/fontWeight/caption/M"
+              },
+              "lineHeight": {
+                "$ref": "#/tokens/typography/lineHeight/caption"
+              },
+              "letterSpacing": {
+                "$ref": "#/tokens/typography/letterSpacing/default"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

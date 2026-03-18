@@ -1,0 +1,205 @@
+{
+  "tokens": {
+    "grid": {
+      "primitives": {
+        "spacing": {
+          "spacing32": {
+            "value": 32
+          },
+          "spacing24": {
+            "value": 24
+          },
+          "spacing20": {
+            "value": 20
+          },
+          "spacing16": {
+            "value": 16
+          },
+          "spacing12": {
+            "value": 12
+          },
+          "spacing36": {
+            "value": 36
+          },
+          "spacing40": {
+            "value": 40
+          },
+          "spacing44": {
+            "value": 44
+          },
+          "spacing48": {
+            "value": 48
+          },
+          "spacing52": {
+            "value": 52
+          },
+          "spacing56": {
+            "value": 56
+          },
+          "spacing64": {
+            "value": 64
+          },
+          "spacing8": {
+            "value": 8
+          },
+          "spacing6": {
+            "value": 6
+          },
+          "spacing4": {
+            "value": 4
+          },
+          "spacing2": {
+            "value": 2
+          },
+          "spacing0": {
+            "value": 0
+          },
+          "spacing72": {
+            "value": 72
+          },
+          "spacing80": {
+            "value": 80
+          },
+          "spacing88": {
+            "value": 88
+          },
+          "spacing96": {
+            "value": 96
+          },
+          "spacing104": {
+            "value": 104
+          },
+          "spacing112": {
+            "value": 112
+          },
+          "spacing120": {
+            "value": 120
+          },
+          "spacing128": {
+            "value": 128
+          },
+          "spacing136": {
+            "value": 136
+          },
+          "spacing144": {
+            "value": 144
+          },
+          "spacing152": {
+            "value": 152
+          },
+          "spacing160": {
+            "value": 160
+          }
+        },
+        "radius": {
+          "radius2XS": {
+            "value": 0
+          },
+          "radiusXS": {
+            "value": 2
+          },
+          "radiusS": {
+            "value": 4
+          },
+          "radiusM": {
+            "value": 8
+          },
+          "radiusL": {
+            "value": 12
+          },
+          "radiusXL": {
+            "value": 16
+          },
+          "radius2XL": {
+            "value": 24
+          }
+        }
+      },
+      "semantic": {
+        "padding": {
+          "gridPaddingXL": {
+            "value": 24
+          },
+          "gridPaddingM": {
+            "value": 12
+          },
+          "gridPaddingS": {
+            "value": 8
+          },
+          "gridPaddingXS": {
+            "value": 6
+          },
+          "gridPadding2XS": {
+            "value": 4
+          },
+          "gridPaddingL": {
+            "value": 16
+          }
+        },
+        "gap": {
+          "gridGap3XL": {
+            "value": 32
+          },
+          "gridGapL": {
+            "value": 12
+          },
+          "gridGapM": {
+            "value": 8
+          },
+          "gridGapS": {
+            "value": 4
+          },
+          "gridGapXS": {
+            "value": 2
+          },
+          "gridGapXL": {
+            "value": 16
+          },
+          "gridGapNone": {
+            "value": 0
+          },
+          "gridGap2XL": {
+            "value": 24
+          }
+        },
+        "height": {
+          "gridHeightL": {
+            "value": 56
+          },
+          "gridHeightM": {
+            "value": 48
+          },
+          "gridHeightS": {
+            "value": 40
+          },
+          "gridHeightXS": {
+            "value": 32
+          }
+        },
+        "radius": {
+          "gridRadiusXL": {
+            "value": 16
+          },
+          "gridRadiusL": {
+            "value": 12
+          },
+          "gridRadiusM": {
+            "value": 8
+          },
+          "gridRadiusS": {
+            "value": 6
+          },
+          "gridRadiusXS": {
+            "value": 4
+          },
+          "gridRadius2XL": {
+            "value": 24
+          },
+          "gridRadius2XS": {
+            "value": 2
+          }
+        }
+      }
+    }
+  }
+}

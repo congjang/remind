@@ -6,14 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "tokens:figma:export": "node scripts/figma/export-variables.mjs --include-published",
+    "tokens:figma:build": "node scripts/figma/build-tokens.mjs",
+    "tokens:figma:domains": "node scripts/figma/build-typography.mjs && node scripts/figma/build-colors.mjs",
+    "tokens:figma:sync": "npm run tokens:figma:export && npm run tokens:figma:build && npm run tokens:figma:domains",
+    "tokens:plugin:domains": "node scripts/figma/import-plugin-tokens.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.37.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -22,6 +33,10 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "storybook": "^10.2.19",
+    "@storybook/react-webpack5": "^10.2.19",
+    "@storybook/addon-webpack5-compiler-swc": "^4.0.2",
+    "eslint-plugin-storybook": "^10.2.19"
   }
 }

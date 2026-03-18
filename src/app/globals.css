@@ -1,8 +1,26 @@
 @import "tailwindcss";
+@import "./design-tokens.css";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Grid tokens used in components (from design-tokens/grid.json + Figma) */
+  --Grid-Height-XL: 64px;
+  --Grid-Height-L: 56px;
+  --Grid-Height-M: 48px;
+  --Grid-Height-S: 40px;
+  --Grid-Height-XS: 32px;
+  --Grid-Padding-2XS: 4px;
+  --Grid-Padding-XS: 6px;
+
+  --Grid-Padding-S: 8px;
+  --Grid-Padding-L: 16px;
+  --Grid-Padding-XL: 24px;
+  --Grid-Gap-M: 8px;
+
+  --Grid-Radius-M: 8px;
+  --Grid-Radius-L: 12px;
 }
 
 @theme inline {
@@ -23,4 +41,57 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Playground/폼 입력 placeholder — colorElementBase1Disabled 연결 (우선 적용) */
+input::placeholder,
+textarea::placeholder {
+  color: var(--colorElementBase1Disabled, rgba(0, 0, 0, 0.3)) !important;
+}
+/* Playground 영역 한정 (Tailwind 등 덮어쓰기 방지) */
+.playground-placeholder-token input::placeholder,
+.playground-placeholder-token textarea::placeholder {
+  color: var(--colorElementBase1Disabled, rgba(0, 0, 0, 0.3)) !important;
+}
+/* Playground 폼 컨트롤 텍스트 색 — design token (input/textarea/select) */
+.playground-placeholder-token input,
+.playground-placeholder-token textarea,
+.playground-placeholder-token select {
+  color: var(--colorElementBase1Default, #35363a);
+}
+
+/* 인스펙터에서 텍스트 색상 출처 확인용 클래스 (colorElementBase1Default) */
+.playground-form-text {
+  color: var(--colorElementBase1Default, #35363a);
+}
+
+/* Playground 컬러 테마 전환 — 다크 시 배경/카드/섹션 적용 */
+.playground-theme-dark {
+  background: #1c1c1e;
+}
+.playground-theme-dark main {
+  background: #2c2c2e;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+/* main 내부 .bg-white (네비게이션 바 등) */
+.playground-theme-dark .bg-white {
+  background: #3a3a3c;
+}
+.playground-theme-dark .playground-placeholder-token h2,
+.playground-theme-dark .playground-placeholder-token h3 {
+  color: #e5e5e7;
+}
+.playground-theme-dark .playground-placeholder-token .text-zinc-500,
+.playground-theme-dark .playground-placeholder-token .text-zinc-600 {
+  color: #a1a1a6;
+}
+.playground-theme-dark .playground-placeholder-token section.rounded-xl {
+  background: #3a3a3c;
+  border-color: #48484a;
+}
+.playground-theme-dark .playground-placeholder-token .border-zinc-200 {
+  border-color: #48484a;
+}
+.playground-theme-dark .playground-placeholder-token .bg-zinc-50\/60 {
+  background: rgba(58, 58, 60, 0.8);
 }
