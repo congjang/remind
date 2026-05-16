@@ -114,7 +114,7 @@ export function Fab({
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-[50px] transition-colors",
+        "inline-flex cursor-pointer items-center justify-center rounded-[50px] transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--colorOutlinePrimaryDefault)]",
         sizeClasses[size],
         sizeShadowClasses[size],

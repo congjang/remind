@@ -27,6 +27,11 @@ export type BottomNavBarProps = {
   onChange?: (key: BottomNavKey) => void;
   /** 중앙 FAB 클릭 (미전달 시 no-op) */
   onFabClick?: () => void;
+  /**
+   * `true`: 부모(`relative` 앱 셸 `main`) 하단에 고정. 스크롤 영역에는 `pb-[58px]` 등으로 여백 필요.
+   * 기타 화면과 동일 레이어: `z-20`.
+   */
+  dock?: boolean;
   className?: string;
 };
 
@@ -91,7 +96,7 @@ function BottomNavBarItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-px min-w-px flex-[1_0_0] flex-col items-center justify-center gap-[4px] overflow-clip p-[8px] relative",
+        "relative flex min-h-px min-w-px flex-[1_0_0] cursor-pointer flex-col items-center justify-center gap-[4px] overflow-clip p-[8px]",
         colorClass
       )}
       data-name="item_nav_bar"
@@ -107,16 +112,23 @@ function BottomNavBarItem({
 }
 
 /** Figma bottom_nav_bar: item + item + 중앙 FAB (absolute, top-[calc(50%-16px)]) */
+/** `dock` 시 스크롤 패딩용 — nav 높이와 동일 */
+export const BOTTOM_NAV_BAR_HEIGHT_PX = 58;
+
 export function BottomNavBar({
   active = "feed",
   onChange,
   onFabClick,
+  dock = false,
   className,
 }: BottomNavBarProps) {
   return (
     <nav
       className={cn(
-        "relative flex h-[58px] w-full max-w-full items-center gap-[48px] rounded-tl-[24px] rounded-tr-[24px] border-t border-[color:var(--colorOutlineBase2,#e1e2e4)] bg-[color:var(--colorBackgroundBase1Default,#ffffff)] shadow-[0_16px_16px_0_rgba(0,0,0,0.05)]",
+        "flex h-[58px] w-full max-w-full shrink-0 items-center gap-[48px] rounded-tl-[24px] rounded-tr-[24px] bg-[color:var(--colorBackgroundBase1Default,#ffffff)] shadow-[0_16px_16px_0_rgba(0,0,0,0.05)]",
+        dock
+          ? "absolute bottom-0 left-0 right-0 z-20"
+          : "relative",
         className
       )}
       role="navigation"

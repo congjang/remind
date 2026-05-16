@@ -6,8 +6,19 @@ import { Checkbox } from "../components/Checkbox";
 import { Radio } from "../components/Radio";
 import { ToggleSwitch } from "../components/ToggleSwitch";
 import { TopNavBar, type TopNavBarType } from "../components/TopNavBar";
-import { List } from "../components/List";
-import { Card, CardOneLineWithIcon, CardOneLineHor } from "../components/Card";
+import { List, type ListItemConfig } from "../components/List";
+import {
+  Card,
+  CardOneLineWithIcon,
+  CardOneLineHor,
+  CardOneLineNewRecordButton,
+} from "../components/Card";
+import { CardOneLine } from "../components/CardOneLine";
+import { Card2LineVer } from "../components/Card2LineVer";
+import { FeedRecordCard } from "../components/FeedRecordCard";
+import { DateLabel } from "../components/DateLabel";
+import { TimeItem } from "../components/TimeItem";
+import { WeatherItem } from "../components/WeatherItem";
 import { EmotionIcon } from "../components/EmotionIcon";
 import { Calendar } from "../components/Calendar";
 import { ToastMessage, type ToastMessageVariant } from "../components/ToastMessage";
@@ -117,6 +128,10 @@ export default function PlaygroundPage() {
   /** 오늘의 회고 / 내일의 목표 (하단 List) 토글 상태 */
   const [bottomTodayReviewOn, setBottomTodayReviewOn] = useState(false);
   const [bottomTomorrowGoalOn, setBottomTomorrowGoalOn] = useState(false);
+  /** List 정적 매칭 보드 — radio 그룹 */
+  const [listShowcaseRadio, setListShowcaseRadio] = useState("ls-r1");
+  const [listShowcaseSwitch, setListShowcaseSwitch] = useState(false);
+  const [listShowcaseCheck, setListShowcaseCheck] = useState(true);
 
   return (
     <div
@@ -125,7 +140,7 @@ export default function PlaygroundPage() {
       <main className="flex h-[100dvh] max-h-[720px] md:max-h-[900px] w-full max-w-[420px] md:max-w-[744px] flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
         <div className="playground-placeholder-token flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-3">
           {/* Top Nav Bar — MCP 스펙 기반, type별 1:1 */}
-          <section className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+          <section className="space-y-3 rounded-xl border border-red-300 bg-red-200 p-3">
             <h2 className="text-xs font-semibold text-zinc-600">Top Nav Bar</h2>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               <label className="flex items-center gap-1.5">
@@ -231,7 +246,7 @@ export default function PlaygroundPage() {
           </section>
 
           {/* 컬러 테마 전환 — Figma 변수 모드 추가 후 테스트 예정, 현재 disabled */}
-          <section className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 opacity-75">
+          <section className="space-y-2 rounded-xl border border-red-300 bg-red-200 p-3 opacity-75">
             <h2 className="text-xs font-semibold text-zinc-600">테마</h2>
             <ToggleSwitch
               size="M"
@@ -248,7 +263,7 @@ export default function PlaygroundPage() {
           </section>
 
           {/* Card — MCP card_1line_with icon / card_1line_hor */}
-          <section className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+          <section className="space-y-3 rounded-xl border border-red-300 bg-red-200 p-3">
             <h2 className="text-xs font-semibold text-zinc-600">Card</h2>
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <label className="flex items-center gap-1.5">
@@ -310,12 +325,200 @@ export default function PlaygroundPage() {
             </div>
           </section>
 
+          {/* Card — Figma 구조 매칭 (정적 레퍼런스, MCP node-id 대응) */}
+          <section className="space-y-4 rounded-xl border border-amber-400 bg-amber-50 p-3">
+            <div className="space-y-1">
+              <h2 className="text-xs font-semibold text-amber-900">
+                Card — Figma 매칭 보드
+              </h2>
+              <p className="text-[11px] leading-snug text-amber-950/80">
+                Figma MCP의 <strong>Session activity: Not sent</strong>는 Cursor와의
+                &quot;세션 연결&quot; 여부에 가깝고, 픽셀 일치를 보장하지 않습니다. 아래는
+                구현된 컴포넌트와 Figma 컴포넌트명·노드 기준 대응표입니다. 디자인 파일과
+                나란히 두고 비교하세요.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-semibold text-amber-900">
+                Card1Line (node 3232:3094)
+              </h3>
+              <div className="grid gap-3 md:grid-cols-1">
+                <div className="rounded-lg bg-white p-3 ring-1 ring-amber-200/80">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    card_1line_hor
+                  </p>
+                  <CardOneLineHor label="Label" date="24" />
+                </div>
+                <div className="rounded-lg bg-white p-3 ring-1 ring-amber-200/80">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    card_1line_with icon
+                  </p>
+                  <CardOneLineWithIcon
+                    label="Label"
+                    emotion={<EmotionIcon name="happiness" />}
+                    showButton
+                  />
+                </div>
+                <div className="rounded-lg bg-white p-3 ring-1 ring-amber-200/80">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    card with button
+                  </p>
+                  <CardOneLineNewRecordButton
+                    onClick={() => window.alert("CardOneLineNewRecordButton")}
+                  />
+                </div>
+                <div className="rounded-lg bg-white p-3 ring-1 ring-amber-200/80">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    CardOneLine (통합 API, type 분기)
+                  </p>
+                  <div className="space-y-2">
+                    <CardOneLine type="card_1line_hor" label="통합·hor" date="3" />
+                    <CardOneLine
+                      type="card_1line_with icon"
+                      label="통합·icon"
+                      emotion={<EmotionIcon name="happiness" />}
+                    />
+                    <CardOneLine type="card with button" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-semibold text-amber-900">
+                Card2LineVer (node 3232:3095)
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] p-3 ring-1 ring-amber-200/80">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    horizontal · M
+                  </p>
+                  <Card2LineVer
+                    layout="horizontal"
+                    size="M"
+                    timeLabel="오후 5:01"
+                    weatherIcon="wea_sun"
+                    cardRecordTxt="지금 생각난 걸 바로바로 기록해요. 두 줄까지 클램프는 피드에서 확인."
+                    weatherLine="-1°C, 미세먼지 좋음"
+                    recordTextClassName="line-clamp-2"
+                    className="max-w-none"
+                  />
+                </div>
+                <div className="rounded-lg bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] p-3 ring-1 ring-amber-200/80">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    vertical · M
+                  </p>
+                  <Card2LineVer
+                    layout="vertical"
+                    size="M"
+                    timeLabel="오전 9:30"
+                    weatherIcon="wea_sun"
+                    cardRecordTxt="본문이 위, 시간·날씨 행이 아래 (Figma vertical)."
+                    className="max-w-none"
+                  />
+                </div>
+                <div className="rounded-lg bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] p-3 ring-1 ring-amber-200/80 md:col-span-2">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    type3 · L (헤드라인 + DateLabel + time/weather)
+                  </p>
+                  <div className="flex justify-center">
+                    <Card2LineVer
+                      layout="type3"
+                      size="L"
+                      timeLabel="오전 00:00"
+                      weatherIcon="wea_sun"
+                      cardRecordTxt="헤드라인 본문"
+                      date={{ yyyy: "2025", mm: "03", dd: "24" }}
+                    />
+                  </div>
+                </div>
+                <div className="rounded-lg bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] p-3 ring-1 ring-amber-200/80 md:col-span-2">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    type4 · L
+                  </p>
+                  <Card2LineVer
+                    layout="type4"
+                    size="L"
+                    timeLabel="오후 11:59"
+                    weatherIcon="wea_sun"
+                    cardRecordTxt="타입4 큰 제목 두 줄까지 가능"
+                  />
+                </div>
+                <div className="rounded-lg bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] p-3 ring-1 ring-amber-200/80 md:col-span-2">
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    FeedRecordCard (= horizontal M + weather_line 확장)
+                  </p>
+                  <FeedRecordCard
+                    timeLabel="오후 5:01"
+                    body="저장된 기록 카드와 동일 조합입니다."
+                    weatherLine="-1°C, 미세먼지 좋음"
+                    weatherIcon="wea_sun"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-[11px] font-semibold text-amber-900">
+                하위 조각 (Date · TimeItem · WeatherItem)
+              </h3>
+              <div className="flex flex-wrap gap-4 rounded-lg bg-white p-3 ring-1 ring-amber-200/80">
+                <div>
+                  <p className="mb-1 text-[10px] font-medium text-zinc-500">
+                    DateLabel (3232:3320)
+                  </p>
+                  <DateLabel yyyy="2025" mm="03" dd="24" />
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] font-medium text-zinc-500">
+                    TimeItem horizontal (3232:920)
+                  </p>
+                  <TimeItem ampm="오후" hour="5" minute="01" />
+                </div>
+                <div>
+                  <p className="mb-1 text-[10px] font-medium text-zinc-500">
+                    TimeItem vertical (3232:921)
+                  </p>
+                  <TimeItem
+                    direction="vertical"
+                    ampm="오전"
+                    hour="00"
+                    minute="00"
+                  />
+                </div>
+                <div className="min-w-[200px]">
+                  <p className="mb-1 text-[10px] font-medium text-zinc-500">
+                    WeatherItem variants (3231:802)
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <WeatherItem
+                      variant="timeWeather"
+                      timeLabel="오후 5:01"
+                      weatherIcon="wea_sun"
+                    />
+                    <WeatherItem
+                      variant="weatherLoc"
+                      weatherIcon="wea_sun"
+                      locCity="서울시"
+                      locGu="중구"
+                      tem="-1°C"
+                      dust="미세먼지 좋음"
+                    />
+                    <WeatherItem variant="temIconSimple" tem="-1°C" weatherIcon="wea_sun" />
+                    <WeatherItem variant="weatherOnly" weatherIcon="wea_sun" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Functional Icons — size / color 테스트 */}
           <section className="space-y-3">
             <h2 className="text-xs font-semibold text-zinc-500">
               Functional Icons (size · color)
             </h2>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 아이콘 사이즈 · 컬러
               </h3>
@@ -367,7 +570,7 @@ export default function PlaygroundPage() {
             <h2 className="text-xs font-semibold text-zinc-500">
               Weather Icons (size)
             </h2>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 날씨 아이콘 사이즈
               </h3>
@@ -400,7 +603,7 @@ export default function PlaygroundPage() {
             <h2 className="text-xs font-semibold text-zinc-500">
               Emotion Icons (size)
             </h2>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 감정 아이콘 사이즈
               </h3>
@@ -458,7 +661,7 @@ export default function PlaygroundPage() {
           </section>
 
           {/* Button props playground */}
-          <section className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+          <section className="space-y-3 rounded-xl border border-red-300 bg-red-200 p-3">
             <h2 className="text-xs font-semibold text-zinc-600">
               Button properties
             </h2>
@@ -606,7 +809,7 @@ export default function PlaygroundPage() {
             </div>
 
             {/* Toggle Switch — 12 variants (Figma 1:1): S/M/L × Off, On, Disabled off, Disabled on */}
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-3 text-xs font-semibold text-zinc-600">
                 Toggle Switch (12 variants)
               </h3>
@@ -658,7 +861,7 @@ export default function PlaygroundPage() {
               MCP 검토: Button Set은 내부 슬롯에 <strong>Button</strong> 컴포넌트를 사용합니다. Figma의 button set 프레임은 buttons 블록(1 또는 2개)으로 구성되며, 각 블록 스타일을 디자인시스템 Button에 매핑했습니다.
             </p>
 
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 Button Set 속성
               </h3>
@@ -828,7 +1031,7 @@ export default function PlaygroundPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 FAB 속성
               </h3>
@@ -876,12 +1079,122 @@ export default function PlaygroundPage() {
             </div>
           </section>
 
+          {/* List — Figma 매칭 보드 (전체 variant 고정) */}
+          <section className="space-y-3 rounded-xl border border-amber-400 bg-amber-50 p-3">
+            <div className="space-y-1">
+              <h2 className="text-xs font-semibold text-amber-900">
+                List — Figma 매칭 보드
+              </h2>
+              <p className="text-[11px] leading-snug text-amber-950/80">
+                <code className="rounded bg-amber-100/80 px-1">List1Line</code> variant
+                전부를 한 컨테이너에 나열했습니다. 사이즈는 M(40px) 고정 — Figma
+                스펙과 비교할 때 동일 스케일로 맞추세요.
+              </p>
+            </div>
+            <div className="rounded-lg bg-white p-3 ring-1 ring-amber-200/80">
+              <List
+                items={
+                  [
+                    {
+                      id: "ls-1",
+                      variant: "labelOnly",
+                      size: "M",
+                      label: "label only",
+                    },
+                    {
+                      id: "ls-2",
+                      variant: "leadingIconLabel",
+                      size: "M",
+                      label: "leading icon + label",
+                    },
+                    {
+                      id: "ls-3",
+                      variant: "labelTrailingIcon",
+                      size: "M",
+                      label: "label + trailing icon",
+                    },
+                    {
+                      id: "ls-4",
+                      variant: "labelCheck",
+                      size: "M",
+                      label: "label + check",
+                      checked: listShowcaseCheck,
+                      onCheckChange: setListShowcaseCheck,
+                    },
+                    {
+                      id: "ls-5",
+                      variant: "labelLabel",
+                      size: "M",
+                      label: "주 라벨",
+                      secondaryLabel: "2024.11.30",
+                    },
+                    {
+                      id: "ls-6",
+                      variant: "labelSwitch",
+                      size: "M",
+                      label: "label + switch",
+                      checked: listShowcaseSwitch,
+                      onSwitchChange: setListShowcaseSwitch,
+                    },
+                    {
+                      id: "ls-7",
+                      variant: "labelRadio",
+                      size: "M",
+                      label: "Radio A",
+                      selected: listShowcaseRadio === "ls-7",
+                      onRadioSelect: () => setListShowcaseRadio("ls-7"),
+                      radioName: "playground-list-showcase",
+                    },
+                    {
+                      id: "ls-8",
+                      variant: "labelRadio",
+                      size: "M",
+                      label: "Radio B",
+                      selected: listShowcaseRadio === "ls-8",
+                      onRadioSelect: () => setListShowcaseRadio("ls-8"),
+                      radioName: "playground-list-showcase",
+                    },
+                  ] satisfies ListItemConfig[]
+                }
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {(["S", "M", "L"] as const).map((sz) => (
+                <div
+                  key={sz}
+                  className="rounded-lg bg-white p-3 ring-1 ring-amber-200/80"
+                >
+                  <p className="mb-2 text-[10px] font-medium text-zinc-500">
+                    size {sz}
+                  </p>
+                  <List
+                    items={[
+                      {
+                        id: `lsz-${sz}-1`,
+                        variant: "labelOnly",
+                        size: sz,
+                        label: `label only (${sz})`,
+                      },
+                      {
+                        id: `lsz-${sz}-2`,
+                        variant: "labelLabel",
+                        size: sz,
+                        label: "라벨",
+                        secondaryLabel: "보조",
+                      },
+                    ]}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* List — variant / size / label / boolean 테스트 */}
           <section className="space-y-3">
             <h2 className="text-xs font-semibold text-zinc-500">
               List (Item 단위 조합)
             </h2>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 List 속성 (variant, size, label, boolean 토글)
               </h3>
@@ -999,7 +1312,7 @@ export default function PlaygroundPage() {
             <h2 className="text-xs font-semibold text-zinc-500">
               Toast Message
             </h2>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 Toast 속성 (variant, label, action)
               </h3>
@@ -1056,7 +1369,7 @@ export default function PlaygroundPage() {
             <h2 className="text-xs font-semibold text-zinc-500">
               Calendar (Day: 기본 · 오늘 · 선택 · 일정 있음)
             </h2>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">
                 Day 속성 (Figma: state, show_recorded)
               </h3>
@@ -1123,7 +1436,7 @@ export default function PlaygroundPage() {
                 </div>
               </div>
             </div>
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="rounded-xl border border-red-300 bg-red-200 p-3">
               <h3 className="mb-2 text-xs font-semibold text-zinc-600">속성</h3>
               <div className="flex flex-wrap gap-3 text-xs">
                 <label className="flex items-center gap-1.5">

@@ -1,16 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { TopNavBar } from "./components/TopNavBar";
+import { LiveWeatherBlock } from "./components/LiveWeatherBlock";
 import { CardOneLineWithIcon } from "./components/Card";
 import { List } from "./components/List";
 import { Button } from "./components/Button";
 import { EmotionIcon } from "./components/EmotionIcon";
 import { ToastMessage } from "./components/ToastMessage";
 import type { EmotionIconName } from "../icons";
-import { saveRecord } from "./lib/recordsStore";
+import { ButtonLeadingIcon } from "../icons/ButtonIcons";
+import { postQuickEntry } from "./lib/remindApi";
+import {
+  formatRecordHeadlineTemplate,
+  pickRandomHeadlineTemplateIndex,
+  RECORD_HEADLINE_TEMPLATES,
+} from "./lib/recordHeadlineTemplates";
+import {
+  getRecords,
+  invalidateRecordsCache,
+  saveRecord,
+  type StoredWeatherSnapshot,
+} from "./lib/recordsStore";
 
 function addDaysYmd(daysToAdd: number) {
   const d = new Date();
@@ -38,19 +51,37 @@ export default function Home() {
   const [todoOn, setTodoOn] = useState(false);
   const [dueDate, setDueDate] = useState<string | null>(null); // YYYY-MM-DD
   const [emotion, setEmotion] = useState<EmotionIconName>("happiness");
+  const [weatherSnapshot, setWeatherSnapshot] =
+    useState<StoredWeatherSnapshot | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  /** 로컬에 저장된 기록 개수 (`$` / `$+1` 치환용) */
+  const [savedRecordCount, setSavedRecordCount] = useState(0);
+  /** 페이지 진입 시 한 번 골라 유지하는 동기부여 문장 템플릿 인덱스 */
+  const [headlineTemplateIndex] = useState(pickRandomHeadlineTemplateIndex);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const baseMirrorRef = useRef<HTMLDivElement>(null);
+  const overlayMirrorRef = useRef<HTMLDivElement>(null);
   const toastTimeoutRef = useRef<number | null>(null);
 
-  // textarea 높이를 내용에 맞춰 자동 확장
+  // 미러 div로 실제 콘텐츠 높이를 측정해 paddingTop으로 수직 중앙 정렬
+  // flex-1 textarea는 clientHeight === scrollHeight가 되므로 미러로 별도 측정
   useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.max(el.scrollHeight, 73)}px`;
-  }, [text]);
+    const el = isEditing ? overlayTextareaRef.current : textareaRef.current;
+    const mirror = isEditing ? overlayMirrorRef.current : baseMirrorRef.current;
+    if (!el || !mirror) return;
+    const raf = requestAnimationFrame(() => {
+      const savedTop = el.scrollTop;
+      const contentH = mirror.offsetHeight;
+      const availH = el.clientHeight;
+      el.style.paddingTop = `${Math.max(0, Math.floor((availH - contentH) / 2))}px`;
+      el.scrollTop = savedTop;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [text, isEditing]);
 
   // 편집 모드 진입 시 오버레이 textarea에 포커스
   useEffect(() => {
@@ -73,6 +104,33 @@ export default function Home() {
     if (!todoOn) setDueDate(null);
   }, [todoOn]);
 
+  const refreshSavedRecordCount = useCallback(() => {
+    invalidateRecordsCache();
+    setSavedRecordCount(getRecords().length);
+  }, []);
+
+  useEffect(() => {
+    refreshSavedRecordCount();
+    const onFocus = () => refreshSavedRecordCount();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "remind-records-v1" || e.key === null)
+        refreshSavedRecordCount();
+    };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [refreshSavedRecordCount]);
+
+  const recordHeadline = formatRecordHeadlineTemplate(
+    RECORD_HEADLINE_TEMPLATES[headlineTemplateIndex] ??
+      RECORD_HEADLINE_TEMPLATES[0] ??
+      "$+1개의 기록을 쌓을 차례",
+    savedRecordCount,
+  );
+
   const cycleDueDate = () => {
     const options = [1, 3, 7, 14].map(addDaysYmd);
     if (!dueDate) {
@@ -84,14 +142,33 @@ export default function Home() {
     setDueDate(next);
   };
 
-  const handleSave = () => {
-    if (isEmpty) return;
+  const handleSave = async () => {
+    if (isEmpty || isSaving) return;
+    setIsSaving(true);
+    setSaveError(false);
+
     const payload = text.trim();
     saveRecord({
       text: payload,
       isTodo: todoOn,
       dueDate: todoOn ? dueDate : null,
+      emotion,
+      weather: weatherSnapshot ?? undefined,
     });
+    setSavedRecordCount(getRecords().length);
+
+    try {
+      await postQuickEntry({
+        body: payload,
+        emotionTagIds: [`emotion:${emotion}`],
+        source: "app",
+        weather: weatherSnapshot ?? undefined,
+      });
+    } catch (e) {
+      console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
+      setSaveError(true);
+    }
+
     setToastVisible(true);
 
     if (toastTimeoutRef.current !== null) {
@@ -99,6 +176,7 @@ export default function Home() {
     }
     toastTimeoutRef.current = window.setTimeout(() => {
       setToastVisible(false);
+      setIsSaving(false);
       router.push("/feed");
     }, 900);
   };
@@ -114,15 +192,15 @@ export default function Home() {
         >
           <TopNavBar
             type="Large title"
-            headline="오늘의 기록"
+            headline={recordHeadline}
             date={new Date().toLocaleDateString("ko-KR", {
               month: "long",
               day: "numeric",
               weekday: "short",
             })}
-            weatherLocation="서대문구 연희동"
-            weatherTemp="-1°C"
-            weatherExtra="미세먼지 좋음"
+            trailing={
+              <LiveWeatherBlock onSnapshotChange={setWeatherSnapshot} />
+            }
           />
         </div>
 
@@ -133,7 +211,7 @@ export default function Home() {
             type="button"
             className="text-left"
             onClick={() => {
-              const order: EmotionIconName[] = ["happiness", "sad", "angry", "Calmness"];
+              const order: EmotionIconName[] = ["happiness", "sad", "angry", "Calmness", "wronged"];
               const idx = order.indexOf(emotion);
               const next = order[(idx + 1) % order.length] ?? "happiness";
               setEmotion(next);
@@ -147,26 +225,33 @@ export default function Home() {
               <motion.section
                 key="base-textfield"
                 layoutId="textfield"
-                className="relative flex min-h-0 flex-1 flex-col overflow-y-auto rounded-[16px] bg-[color:var(--colorBackgroundBase1Default,#ffffff)] px-6 py-6"
+                className="relative flex min-h-0 flex-1 flex-col rounded-[16px] bg-[color:var(--colorBackgroundBase1Default,#ffffff)]"
                 onClick={() => setIsEditing(true)}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
-                <div className="relative flex min-h-full min-w-full flex-col items-center justify-center">
+                <div className="relative flex flex-1 min-h-0 flex-col pl-6 pr-0 py-6">
+                  {/* 콘텐츠 높이 측정용 미러: layout에서 제외(absolute), 시각적으로 숨김(invisible) */}
+                  <div
+                    ref={baseMirrorRef}
+                    aria-hidden
+                    className="pointer-events-none invisible absolute left-0 right-0 top-0 whitespace-pre-wrap break-words pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center"
+                  >
+                    {text || '\u200B'}
+                  </div>
                   <textarea
                     ref={textareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, maxLength))}
-                    rows={2}
-                    className="min-h-[73px] w-full resize-none border-none bg-transparent font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
+                    className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
                   />
-                  {text.length === 0 && (
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                      <p className="whitespace-pre-line font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Disabled,rgba(0,0,0,0.3))]">
-                        {"지금 떠오른 문장은\n무엇인가요?"}
-                      </p>
-                    </div>
-                  )}
                 </div>
+                {text.length === 0 && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <p className="whitespace-pre-line font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Disabled,rgba(0,0,0,0.3))]">
+                      {"지금 떠오른 문장은\n무엇인가요?"}
+                    </p>
+                  </div>
+                )}
                 <div
                   className={`pointer-events-none absolute bottom-4 right-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Caption-M,10px)] ${
                     charCount >= maxLength - 50
@@ -226,22 +311,22 @@ export default function Home() {
             variant="contained"
             level="primary"
             fullWidth
-            disabled={isEmpty}
+            disabled={isEmpty || isSaving}
             className={
-              isEmpty
+              isEmpty || isSaving
                 ? "bg-[color:var(--colorButtonContainerPrimaryDisabled,rgba(0,0,0,0.2))] text-[color:var(--colorElementOnContainerHighlightDisabled,rgba(255,255,255,0.3))]"
                 : undefined
             }
             onClick={handleSave}
           >
-            기록 저장하기
+            {isSaving ? "저장 중..." : "기록 저장하기"}
           </Button>
         </div>
 
         {/* 텍스트 편집 오버레이 (기존 레이아웃 유지) */}
         {isEditing && (
           <div className="absolute inset-0 z-20 flex flex-col bg-transparent">
-            <div className="pt-[21px]">
+            <div className="bg-red-200 pt-[21px]">
               <div className="flex items-center justify-between px-4 pb-2">
                 <span className="font-[family-name:var(--Typography-font-family)] text-[17px] leading-[22px] text-black">
                   9:41
@@ -254,52 +339,44 @@ export default function Home() {
               </div>
 
               <div className="flex items-center justify-between px-6 py-2">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="flex size-11 items-center justify-center rounded-[10px] bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)]"
-                  >
-                    <span className="h-6 w-6 rounded-md bg-zinc-400" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    className="flex size-11 items-center justify-center rounded-[10px] bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)]"
-                  >
-                    <span className="h-6 w-6 rounded-md bg-zinc-400" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    className="flex size-11 items-center justify-center rounded-[10px] bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)]"
-                  >
-                    <span className="h-6 w-6 rounded-md bg-zinc-400" aria-hidden />
-                  </button>
-                </div>
+                <Button
+                  onClick={() => setIsEditing(false)}
+                  aria-label="편집 닫기"
+                  size="M"
+                  leadingIcon={<ButtonLeadingIcon />}
+                  className="!h-11 !w-11 rounded-[10px] bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] text-[color:var(--colorElementBase1Default,#35363a)] hover:bg-[color:var(--colorBackgroundBase3Default,#e9e9eb)] active:bg-[color:var(--colorBackgroundBase2Default,#f1f1f2)]"
+                >
+                </Button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="flex h-12 items-center justify-center rounded-[12px] bg-[color:var(--colorButtonContainerHighlightDefault,rgba(255,255,255,0.1))] px-4"
+                  className="px-1 py-2 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-M,16px)] font-semibold leading-[1.2] text-[color:var(--colorElementOnContainerPrimaryDefault,#03584d)]"
                 >
-                  <span className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-M,16px)] font-semibold leading-[1.2] text-[color:var(--colorElementOnContainerPrimaryDefault,#03584d)]">
-                    완료
-                  </span>
+                  완료
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-1 flex-col bg-transparent">
+            <div className="flex flex-1 flex-col px-4 pb-4">
               <motion.section
                 key="edit-textfield"
                 layoutId="textfield"
-                className="relative flex flex-1 flex-col rounded-[16px] bg-[color:var(--colorBackgroundBase1Default,#ffffff)] px-6 py-6"
+                className="relative flex flex-1 flex-col rounded-[16px] bg-[color:var(--colorBackgroundBase1Default,#ffffff)]"
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
-                <div className="relative flex min-h-full min-w-full flex-col items-center justify-center">
+                <div className="relative flex flex-1 min-h-0 flex-col pl-6 pr-0 py-6">
+                  <div
+                    ref={overlayMirrorRef}
+                    aria-hidden
+                    className="pointer-events-none invisible absolute left-0 right-0 top-0 whitespace-pre-wrap break-words pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center"
+                  >
+                    {text || '\u200B'}
+                  </div>
                   <textarea
                     ref={overlayTextareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, maxLength))}
-                    rows={2}
-                    className="min-h-[73px] w-full resize-none border-none bg-transparent font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
+                    className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
                   />
                 </div>
                 <div
@@ -314,7 +391,7 @@ export default function Home() {
               </motion.section>
             </div>
 
-            <div className="flex h-[336px] flex-col justify-end">
+            <div className="flex h-[336px] flex-col justify-end bg-red-200">
               <div className="relative h-full">
                 <div className="absolute inset-0 bg-[rgba(85,85,85,0.9)] mix-blend-luminosity" />
                 <div className="absolute inset-0 bg-[rgba(86,88,92,0.87)]" />
@@ -410,7 +487,10 @@ export default function Home() {
 
         {toastVisible && (
           <div className="pointer-events-none absolute inset-x-0 bottom-8 z-30 flex justify-center">
-            <ToastMessage label="저장되었습니다" variant="labelOnly" />
+            <ToastMessage
+              label={saveError ? "저장됨 · 서버 연결 실패" : "저장되었습니다"}
+              variant="labelOnly"
+            />
           </div>
         )}
       </main>

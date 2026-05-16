@@ -1,13 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-function resolveFromRepoRoot(p) {
-  return path.resolve(__dirname, '..', '..', p);
-}
+import { resolveFigmaPath } from './tokenRoot.mjs';
 
 /**
  * @typedef {{ type: 'VARIABLE_ALIAS', id: string }} VariableAlias
@@ -104,15 +97,15 @@ async function main() {
   const args = process.argv.slice(2);
   const configArgIdx = args.indexOf('--config');
   const configPath = configArgIdx >= 0 ? args[configArgIdx + 1] : 'design-tokens/figma.config.json';
-  const configAbs = resolveFromRepoRoot(configPath);
+  const configAbs = resolveFigmaPath(configPath);
   const config = JSON.parse(await readFile(configAbs, 'utf8'));
 
-  const rawDir = resolveFromRepoRoot(config.output?.rawExportDir ?? '.cache/figma/raw');
-  const outDir = resolveFromRepoRoot(config.output?.designTokensDir ?? 'design-tokens');
+  const rawDir = resolveFigmaPath(config.output?.rawExportDir ?? '.cache/figma/raw');
+  const outDir = resolveFigmaPath(config.output?.designTokensDir ?? 'design-tokens');
 
-  const primitivesOut = resolveFromRepoRoot(config.output?.primitivesFile ?? 'design-tokens/primitives.json');
-  const semanticsOut = resolveFromRepoRoot(config.output?.semanticsFile ?? 'design-tokens/semantics.json');
-  const mergedOut = resolveFromRepoRoot(config.output?.mergedTokensFile ?? 'design-tokens/tokens.json');
+  const primitivesOut = resolveFigmaPath(config.output?.primitivesFile ?? 'design-tokens/primitives.json');
+  const semanticsOut = resolveFigmaPath(config.output?.semanticsFile ?? 'design-tokens/semantics.json');
+  const mergedOut = resolveFigmaPath(config.output?.mergedTokensFile ?? 'design-tokens/tokens.json');
 
   await mkdir(outDir, { recursive: true });
 

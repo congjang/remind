@@ -8,7 +8,7 @@ Figma MCP Master Rules (Remind App)
 
 - 디자인 토큰 우선 사용
   - MCP에서 얻은 **Hex 컬러(#046253 등)**, **간격(8px)**, **폰트 사이즈**를 그대로 하드코딩하지 않는다.
-  - 항상 프로젝트의 `design-tokens.css` / `globals.css`에 정의된 **시맨틱 토큰**을 우선 사용한다.
+  - 항상 `@adailyrecord/design-tokens`(프리미티브), `src/app/design-tokens/semantic.css`(Figma 시맨틱: 색·Grid·Typography), `globals.css`에 정의된 토큰을 우선 사용한다.
     - 예시: `#046253` → `bg-[color:var(--colorButtonContainerPrimaryDefault,#046253)]`
     - 예시: `8px` 간격 → `gap-[var(--Grid-Gap-M,8px)]`, `px-[var(--Grid-Padding-S,8px)]` 등 기존 Grid/Spacing 토큰을 우선 매핑.
   - MCP의 변수 이름(`Color/button container/primary/default`, `Typography/font-size/Headline M` 등)은 가능한 한 **이미 정의된 CSS 변수 이름**(`--colorButtonContainerPrimaryDefault`, `--Typography-font-size-Headline-M` 등)으로 연결한다.

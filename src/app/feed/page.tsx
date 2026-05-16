@@ -1,203 +1,519 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardOneLineHor } from "../components/Card";
-import { Calendar, type CalendarViewMode } from "../components/Calendar";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  FeedRecordCard,
+  FeedRecordCardSkeleton,
+  weatherIconFromStored,
+} from "../components/FeedRecordCard";
+import { FeedTimelineDots } from "../components/FeedTimelineDots";
 import { TopNavBar } from "../components/TopNavBar";
-import { BottomNavBar } from "../components/BottomNavBar";
-import { getRecords, type StoredRecord } from "../lib/recordsStore";
+import { Button } from "../components/Button";
+import { Fab } from "../components/Fab";
 
-type FeedRecord = {
+/** 가로(캐러셀) 뷰 아이콘 — 중앙 카드가 크게 부각된 3열 레이아웃 */
+function HorizontalViewIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <rect x="0.5" y="4" width="4.5" height="12" rx="1.5" fill="currentColor" fillOpacity="0.45" />
+      <rect x="7.5" y="1.5" width="5" height="17" rx="1.5" fill="currentColor" />
+      <rect x="15" y="4" width="4.5" height="12" rx="1.5" fill="currentColor" fillOpacity="0.45" />
+    </svg>
+  );
+}
+
+/** 세로(리스트) 뷰 아이콘 — 전폭 카드 2개 스택 레이아웃 */
+function VerticalViewIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <rect x="1" y="1.5" width="18" height="7" rx="1.5" fill="currentColor" />
+      <rect x="1" y="11.5" width="18" height="7" rx="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+import type { WeatherIconName } from "../../icons";
+import {
+  getRecords,
+  invalidateRecordsCache,
+  type StoredRecord,
+} from "../lib/recordsStore";
+
+type TimelineDirection = "horizontal" | "vertical";
+
+type TimelineRecord = {
   id: string;
+  createdAt: string;
+  dateKey: string;
   timeLabel: string;
   content: string;
+  weatherLine?: string;
+  weatherIcon?: WeatherIconName | null;
 };
 
-function toYmd(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+const ONE_YEAR_DAYS = 365;
+
+function formatNavDateDot(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
 }
 
-function daysUntil(ymd: string) {
-  const [y, m, d] = ymd.split("-").map((v) => Number(v));
-  const due = new Date(y, (m ?? 1) - 1, d ?? 1);
-  due.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((due.getTime() - today.getTime()) / 86400000);
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
 }
 
-function truncateLabel(s: string) {
-  const t = s.trim();
-  if (t.length <= 10) return t;
-  return `${t.slice(0, 10)}…`;
+function toDateKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-function formatDueLabel(ymd: string) {
-  const d = daysUntil(ymd);
-  if (d < 0) return "지남";
-  if (d === 0) return "오늘";
-  if (d === 1) return "D-1";
-  if (d <= 7) return `D-${d}`;
-  return String(d);
+function extractDateKey(rawCreatedAt: string) {
+  const normalizedRaw = rawCreatedAt.replace(/\//g, "-");
+  const m = normalizedRaw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return `${m[1]}-${m[2]}-${m[3]}`;
+  }
+  const parsed = new Date(rawCreatedAt);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return toDateKey(startOfDay(parsed));
+}
+
+function dateFromKey(key: string) {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+}
+
+function addDays(base: Date, days: number) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function buildOneYearTimelineDates(anchor = new Date()) {
+  const center = startOfDay(anchor);
+  const half = Math.floor(ONE_YEAR_DAYS / 2);
+  return Array.from({ length: ONE_YEAR_DAYS }, (_, i) => addDays(center, i - half));
+}
+
+function datePartsFromKey(dateKey: string) {
+  const d = dateFromKey(dateKey);
+  return {
+    yyyy: String(d.getFullYear()),
+    mm: String(d.getMonth() + 1).padStart(2, "0"),
+    dd: String(d.getDate()).padStart(2, "0"),
+  };
+}
+
+function centerItemInHorizontalScroll(
+  container: HTMLDivElement | null,
+  target: HTMLElement | null,
+  behavior: ScrollBehavior = "smooth",
+) {
+  if (!container || !target) return;
+  const left = target.offsetLeft - (container.clientWidth - target.clientWidth) / 2;
+  container.scrollTo({ left: Math.max(0, left), behavior });
+}
+
+function buildTimelineRecords(storedRecords: StoredRecord[]): TimelineRecord[] {
+  return storedRecords.map((r) => {
+    const created = new Date(r.createdAt);
+    const dateKey = extractDateKey(r.createdAt) ?? toDateKey(startOfDay(created));
+    const weatherLine =
+      r.weather != null
+        ? `${r.weather.location} · ${r.weather.temp} · ${r.weather.extra}`
+        : undefined;
+    const weatherIcon = weatherIconFromStored(r.weather?.icon);
+    return {
+      id: r.id,
+      createdAt: r.createdAt,
+      dateKey,
+      timeLabel: created.toLocaleTimeString("ko-KR", {
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      content: r.text,
+      ...(weatherLine ? { weatherLine } : {}),
+      ...(weatherIcon ? { weatherIcon } : {}),
+    };
+  });
 }
 
 export default function FeedPage() {
-  const [calendarView, setCalendarView] = useState<CalendarViewMode>("month");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2024, 11, 16));
-  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [timelineDirection, setTimelineDirection] =
+    useState<TimelineDirection>("horizontal");
+  const [isTimelineLoading, setIsTimelineLoading] = useState(false);
   const [storedRecords, setStoredRecords] = useState<StoredRecord[]>([]);
+  const [activeRecordIndex, setActiveRecordIndex] = useState(0);
 
-  // 기록하기에서 저장된 기록(localStorage)을 반영
-  useEffect(() => {
+  const dotsScrollRef = useRef<HTMLDivElement | null>(null);
+  const dotItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const isCardDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartAtRef = useRef(0);
+  const [cardDragOffsetX, setCardDragOffsetX] = useState(0);
+  const viewportRef = useRef<HTMLElement | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(390);
+
+  const refreshRecords = useCallback(() => {
+    invalidateRecordsCache();
     setStoredRecords(getRecords());
   }, []);
 
-  const recordsByDate = useMemo<Record<string, FeedRecord[]>>(() => {
-    // 기존 샘플(디자인용) 데이터는 유지
-    const base: Record<string, FeedRecord[]> = {
-      "2024-12-16": [
-        {
-          id: "r1",
-          timeLabel: "오전 11:57",
-          content: "눈 언제까지 오려고 이러나...ㅎ...안에서 보기에는 예쁜데 이따 퇴근이 걱정이다 정말 어떡해☺️",
-        },
-        {
-          id: "r2",
-          timeLabel: "오전 11:57",
-          content: "아니 갑자기 왜 눈이 오는거야ㅠㅠ 집에 어떻게 가냐고",
-        },
-        {
-          id: "r3",
-          timeLabel: "아침 08:57",
-          content: "왠지 기분이 좋아",
-        },
-      ],
-      "2024-12-02": [
-        {
-          id: "r4",
-          timeLabel: "오후 16:12",
-          content: "사과를 먹었다. 아침엔 역시 사과다. 건강해지는 기분이 든다.헤헿.",
-        },
-      ],
-    };
-
-    storedRecords.forEach((r) => {
-      const created = new Date(r.createdAt);
-      const key = toYmd(created);
-      const timeLabel = created.toLocaleTimeString("ko-KR", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-
-      if (!base[key]) base[key] = [];
-      base[key].unshift({ id: r.id, timeLabel, content: r.text });
-    });
-
-    return base;
-  }, [storedRecords]);
+  // 피드 진입·탭 복귀 시 기록하기에서 저장한 내용 반영
+  useEffect(() => {
+    refreshRecords();
+  }, [pathname, refreshRecords]);
 
   useEffect(() => {
-    setIsLoadingRecords(true);
-    const t = setTimeout(() => setIsLoadingRecords(false), 260);
-    return () => clearTimeout(t);
-  }, [calendarView, selectedDate]);
+    const onFocus = () => refreshRecords();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshRecords]);
 
-  const ymd = toYmd(selectedDate);
-  const records = recordsByDate[ymd] ?? [];
+  // 다른 탭에서 localStorage가 바뀌면 반영
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "remind-records-v1" || e.key === null) refreshRecords();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [refreshRecords]);
 
-  const todoForTopCard = storedRecords.find((r) => Boolean(r.isTodo) && Boolean(r.dueDate));
-  const topCard =
-    todoForTopCard && todoForTopCard.dueDate
-      ? {
-          label: truncateLabel(todoForTopCard.text) || "할 일",
-          date: formatDueLabel(todoForTopCard.dueDate),
+  const timelineRecords = useMemo(() => {
+    return buildTimelineRecords(storedRecords);
+  }, [storedRecords]);
+  const cardWidth = useMemo(() => {
+    return Math.max(240, Math.min(viewportWidth - 80, 320));
+  }, [viewportWidth]);
+  const centerLeft = useMemo(() => (viewportWidth - cardWidth) / 2, [viewportWidth, cardWidth]);
+  const cardStep = useMemo(() => centerLeft + cardWidth - 40, [centerLeft, cardWidth]);
+
+  const timelineDates = useMemo(() => buildOneYearTimelineDates(new Date()), []);
+  const timelineDateIndexByKey = useMemo(() => {
+    const m = new Map<string, number>();
+    timelineDates.forEach((d, idx) => m.set(toDateKey(d), idx));
+    return m;
+  }, [timelineDates]);
+  const recordedDateIndices = useMemo(() => {
+    const indices = new Set<number>();
+    timelineDates.forEach((timelineDate, timelineIdx) => {
+      const timelineKey = toDateKey(timelineDate);
+      const hasRecord = timelineRecords.some((record) => {
+        if (record.dateKey === timelineKey) return true;
+        if (record.createdAt.startsWith(timelineKey)) return true;
+        const parsed = new Date(record.createdAt);
+        if (!Number.isNaN(parsed.getTime())) {
+          return toDateKey(startOfDay(parsed)) === timelineKey;
         }
-      : null;
+        return false;
+      });
+      if (hasRecord) indices.add(timelineIdx);
+    });
+    return indices;
+  }, [timelineDates, timelineRecords]);
+
+  useEffect(() => {
+    setActiveRecordIndex(0);
+    dotItemRefs.current = [];
+  }, [timelineRecords.length]);
+
+  useEffect(() => {
+    setIsTimelineLoading(true);
+    const t = setTimeout(() => setIsTimelineLoading(false), 220);
+    return () => clearTimeout(t);
+  }, [timelineDirection]);
+
+  useEffect(() => {
+    const node = viewportRef.current;
+    if (!node) return;
+    const apply = () => setViewportWidth(node.clientWidth || 390);
+    apply();
+    const ro = new ResizeObserver(() => apply());
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+
+  const activeRecord = timelineRecords[activeRecordIndex] ?? timelineRecords[0] ?? null;
+  const activeDate = activeRecord ? dateFromKey(activeRecord.dateKey) : new Date();
+  const activeDateKey = toDateKey(activeDate);
+  const activeDotIndex = timelineDateIndexByKey.get(activeDateKey) ?? Math.floor(ONE_YEAR_DAYS / 2);
+
+  const syncDotsToActiveIndex = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      if (timelineDirection !== "horizontal") return;
+      centerItemInHorizontalScroll(
+        dotsScrollRef.current,
+        dotItemRefs.current[activeDotIndex] ?? null,
+        behavior,
+      );
+    },
+    [activeDotIndex, timelineDirection],
+  );
+
+  useEffect(() => {
+    if (timelineDirection === "horizontal") {
+      syncDotsToActiveIndex("auto");
+    }
+  }, [timelineDirection, syncDotsToActiveIndex]);
+
+  useEffect(() => {
+    syncDotsToActiveIndex();
+  }, [activeDotIndex, syncDotsToActiveIndex]);
+
+  const handleMainWheelCapture = useCallback(
+    (e: React.WheelEvent<HTMLElement>) => {
+      // Prevent browser/system horizontal swipe gestures from leaking out.
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+      const horizontalIntent = absX > absY || e.shiftKey;
+      if (!horizontalIntent) return;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    [],
+  );
+
+  const handleCardPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (timelineDirection !== "horizontal") return;
+    isCardDraggingRef.current = true;
+    dragStartXRef.current = e.clientX;
+    dragStartAtRef.current = performance.now();
+    setCardDragOffsetX(0);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [timelineDirection]);
+
+  const handleCardPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isCardDraggingRef.current) return;
+    const deltaX = e.clientX - dragStartXRef.current;
+    setCardDragOffsetX(deltaX);
+  }, []);
+
+  const handleCardPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isCardDraggingRef.current) return;
+    isCardDraggingRef.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+
+    const elapsed = Math.max(1, performance.now() - dragStartAtRef.current);
+    const deltaX = e.clientX - dragStartXRef.current;
+    const velocity = deltaX / elapsed; // px/ms
+    const flickByDistance = Math.abs(deltaX) > 56;
+    const flickByVelocity = Math.abs(velocity) > 0.45;
+
+    let target = activeRecordIndex;
+    if (flickByDistance || flickByVelocity) {
+      const move = deltaX < 0 ? 1 : -1;
+      target = Math.min(
+        Math.max(activeRecordIndex + move, 0),
+        Math.max(timelineRecords.length - 1, 0),
+      );
+    }
+    setCardDragOffsetX(0);
+    setActiveRecordIndex(target);
+  }, [activeRecordIndex, timelineRecords.length]);
+
+  const findNearestRecordIndexByDateKey = useCallback(
+    (dateKey: string) => {
+      if (timelineRecords.length === 0) return 0;
+      const target = startOfDay(dateFromKey(dateKey)).getTime();
+      let nearestIndex = 0;
+      let nearestDist = Number.POSITIVE_INFINITY;
+      timelineRecords.forEach((r, idx) => {
+        const t = startOfDay(new Date(r.createdAt)).getTime();
+        const dist = Math.abs(t - target);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIndex = idx;
+        }
+      });
+      return nearestIndex;
+    },
+    [timelineRecords],
+  );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <main className="relative flex h-[100dvh] max-h-[844px] md:max-h-[1024px] w-full max-w-[390px] md:max-w-[744px] flex-col overflow-hidden rounded-3xl bg-[var(--colorBackgroundBase2Default,#f2f2f3)] shadow-xl">
-        {/* 최상단 D-day 카드: (할 일 체크 + 마감일 설정)된 기록이 있을 때만 표기 */}
-        {topCard && (
-          <div className="px-6 pt-4">
-            <CardOneLineHor label={topCard.label} date={topCard.date} />
-          </div>
-        )}
-
-        {/* 그 다음 TopNav — (date+viewmode 타입) */}
-        <div className={`px-6 ${topCard ? "pt-2" : "pt-4"}`}>
+    <div
+      onWheelCapture={handleMainWheelCapture}
+      className="flex min-h-screen items-center justify-center bg-zinc-50 px-4"
+    >
+      <main
+        ref={viewportRef}
+        onWheelCapture={handleMainWheelCapture}
+        className="relative flex min-h-0 h-[100dvh] max-h-[844px] md:max-h-[1024px] w-full max-w-[390px] md:max-w-[744px] flex-col overflow-hidden rounded-3xl bg-[var(--colorBackgroundBase2Default,#f2f2f3)] shadow-xl"
+      >
+        <div className="px-6 pt-4">
           <TopNavBar
-            type="date+viewmode"
-            date="2024.12.02"
-            viewMode={calendarView}
-            onLeadingClick={() =>
-              setSelectedDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1))
-            }
-            onTrailingClick={() =>
-              setSelectedDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1))
-            }
-            onViewModeToggle={() => setCalendarView((v) => (v === "month" ? "week" : "month"))}
+            type="Large title"
+            headline="타임라인"
+            date={formatNavDateDot(activeDate)}
+            trailing={null}
           />
         </div>
 
-        {/* 본문 컨테이너 */}
-        <div className="flex flex-1 flex-col gap-6 px-6 py-6">
-          {/* Calendar (month/week variants) */}
-          <div className="flex w-full justify-center">
-            <Calendar
-              view={calendarView}
-              value={selectedDate}
-              todayOverride={new Date(2024, 11, 16)}
-              onChangeDate={setSelectedDate}
-              renderDayDot={(date) => {
-                const key = toYmd(date);
-                return (recordsByDate[key]?.length ?? 0) > 0;
-              }}
-              className="bg-transparent p-0 rounded-none"
-            />
-          </div>
-
-          {/* 오늘의 새 기록 CTA — 전용 컴포넌트가 아직 없으므로 static red 컨테이너 */}
-          <div className="rounded-2xl bg-red-200 px-5 py-3" role="button" tabIndex={0}>
-            <div className="flex items-center justify-center gap-2">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--colorButtonContainerHighlightDefault,#ffffff1a)]">
-                <span className="block h-3 w-3 rounded bg-red-400" />
-              </span>
-              <span className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-M,16px)] font-semibold text-[var(--colorElementOnContainerSecondaryDefault,#26272a)]">
-                오늘의 새 기록
-              </span>
-            </div>
-          </div>
-
-          {/* 기록 카드 리스트 — 아직 전용 2line 카드 컴포넌트가 없으므로 red 컨테이너로 표시 */}
-          <div className="space-y-1">
-            {isLoadingRecords ? (
-              <div className="rounded-2xl bg-red-200 px-4 py-6">
-                <div className="h-4 w-24 rounded bg-red-300" />
-                <div className="mt-3 h-4 w-full rounded bg-red-300" />
-                <div className="mt-2 h-4 w-4/5 rounded bg-red-300" />
-              </div>
-            ) : (
-              records.map((item) => (
-                <Card key={item.id} className="bg-red-200">
-                  <div className="mb-1 flex items-center gap-2 text-[length:var(--Typography-font-size-Label-XS,12px)] font-semibold text-[var(--colorElementBase3Default,#8f9099)]">
-                    <span>{item.timeLabel}</span>
-                    <span className="inline-flex h-4 w-4 rounded bg-red-300" />
-                  </div>
-                  <p className="text-[16px] font-semibold leading-[1.6] text-[var(--colorElementBase1Default,#35363b)]">
-                    {item.content}
-                  </p>
-                </Card>
-              ))
-            )}
+        <div className="px-6 py-2">
+          <div className="grid grid-cols-2 gap-2 rounded-[12px] bg-[color:var(--colorBackgroundBase1Default,#ffffff)] p-2">
+            <Button
+              variant={timelineDirection === "horizontal" ? "contained" : "outlined"}
+              level="primary"
+              size="M"
+              onClick={() => setTimelineDirection("horizontal")}
+              aria-pressed={timelineDirection === "horizontal"}
+              aria-label="가로 보기"
+            >
+              <HorizontalViewIcon />
+            </Button>
+            <Button
+              variant={timelineDirection === "vertical" ? "contained" : "outlined"}
+              level="primary"
+              size="M"
+              onClick={() => setTimelineDirection("vertical")}
+              aria-pressed={timelineDirection === "vertical"}
+              aria-label="세로 보기"
+            >
+              <VerticalViewIcon />
+            </Button>
           </div>
         </div>
 
-        {/* 하단 내비게이션 (기존 BottomNavBar 재사용) */}
-        <BottomNavBar active="feed" onChange={() => {}} />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div
+            className="flex flex-1 flex-col overflow-hidden px-6 pt-3 pb-24"
+          >
+            <section className="flex min-h-0 flex-1 flex-col gap-2">
+              {storedRecords.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
+                  <p className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-S,22px)] font-bold leading-[1.3] text-[color:var(--colorElementBase1Default,#35363b)]">
+                    아직 기록이 없어요
+                  </p>
+                  <p className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Body-M,15px)] text-[color:var(--colorElementBase1Disabled,rgba(0,0,0,0.4))]">
+                    지금 이 순간을 짧게 남겨보세요
+                  </p>
+                  <Button
+                    size="M"
+                    variant="contained"
+                    level="primary"
+                    onClick={() => router.push("/")}
+                  >
+                    첫 기록 남기기
+                  </Button>
+                </div>
+              ) : isTimelineLoading ? (
+                <FeedRecordCardSkeleton />
+              ) : (
+                <>
+                  {timelineDirection === "horizontal" ? (
+                    <div
+                      className="relative -mx-6 min-h-0 flex-1 overflow-hidden"
+                      style={{ overscrollBehaviorX: "contain" }}
+                    >
+                      <div
+                        className="flex h-full"
+                        style={{
+                          transform: `translateX(${centerLeft - activeRecordIndex * cardStep + cardDragOffsetX}px)`,
+                          transition: isCardDraggingRef.current
+                            ? "none"
+                            : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                        }}
+                      >
+                        {timelineRecords.map((item, idx) => {
+                          const isCurrent = idx === activeRecordIndex;
+                          const isNeighbor =
+                            idx === activeRecordIndex - 1 || idx === activeRecordIndex + 1;
+                          return (
+                            <div
+                              key={item.id}
+                              className="shrink-0 rounded-[16px]"
+                              style={{
+                                width: `${cardWidth}px`,
+                                marginRight: `${Math.max(0, cardStep - cardWidth)}px`,
+                                opacity: isCurrent ? 1 : isNeighbor ? 0.7 : 0,
+                                transition: "opacity 220ms ease",
+                              }}
+                            >
+                              <div
+                                className="select-none cursor-grab active:cursor-grabbing"
+                                onPointerDown={handleCardPointerDown}
+                                onPointerMove={handleCardPointerMove}
+                                onPointerUp={handleCardPointerUp}
+                                onPointerCancel={handleCardPointerUp}
+                                style={{ touchAction: "pan-y" }}
+                              >
+                                <FeedRecordCard
+                                  date={datePartsFromKey(item.dateKey)}
+                                  timeLabel={item.timeLabel}
+                                  body={item.content}
+                                  weatherLine={item.weatherLine}
+                                  weatherIcon={item.weatherIcon ?? null}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="no-scrollbar flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+                      {timelineRecords.map((item, idx) => {
+                        return (
+                          <div
+                            key={item.id}
+                            className={`rounded-[16px] p-2 transition-colors ${
+                              idx === activeRecordIndex
+                                ? "bg-[color:var(--colorBackgroundBase1Default,#ffffff)]"
+                                : "bg-[color:var(--colorBackgroundBase2Default,#f1f1f2)]"
+                            }`}
+                            onClick={() => setActiveRecordIndex(idx)}
+                          >
+                            <FeedRecordCard
+                              date={datePartsFromKey(item.dateKey)}
+                              timeLabel={item.timeLabel}
+                              body={item.content}
+                              weatherLine={item.weatherLine}
+                              weatherIcon={item.weatherIcon ?? null}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                </>
+              )}
+            </section>
+          </div>
+        </div>
+        <FeedTimelineDots
+          dates={timelineDates}
+          activeDateIndex={activeDotIndex}
+          hasRecordAtIndex={(index) => recordedDateIndices.has(index)}
+          scrollRef={dotsScrollRef}
+          onWheelCapture={handleMainWheelCapture}
+          registerDotButton={(index, node) => {
+            dotItemRefs.current[index] = node;
+          }}
+          onSelectDate={(date) => {
+            const nearestRecordIndex = findNearestRecordIndexByDateKey(toDateKey(date));
+            setActiveRecordIndex(nearestRecordIndex);
+          }}
+        />
+
+        {/* FAB — 새 기록 추가 (FeedTimelineDots z-30 위에 위치: z-40, bottom-20) */}
+        <div className="pointer-events-none absolute inset-0 z-40">
+          <Fab
+            variant="primary"
+            size="L"
+            className="pointer-events-auto absolute bottom-20 right-6"
+            aria-label="새 기록 추가"
+            onClick={() => router.push("/")}
+          />
+        </div>
       </main>
     </div>
   );

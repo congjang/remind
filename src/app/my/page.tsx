@@ -1,17 +1,20 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Card } from "../components/Card";
 import { TopNavBar } from "../components/TopNavBar";
-import { BottomNavBar } from "../components/BottomNavBar";
+import { Fab } from "../components/Fab";
 
 export default function MyPage() {
+  const router = useRouter();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <main className="relative flex h-[100dvh] max-h-[844px] md:max-h-[1024px] w-full max-w-[390px] md:max-w-[744px] flex-col overflow-hidden rounded-3xl bg-[var(--colorBackgroundBase2Default,#f2f2f3)] shadow-xl">
+      <main className="relative flex min-h-0 h-[100dvh] max-h-[844px] md:max-h-[1024px] w-full max-w-[390px] md:max-w-[744px] flex-col overflow-hidden rounded-3xl bg-[var(--colorBackgroundBase2Default,#f2f2f3)] shadow-xl">
         {/* 상단 TopNav — 마이페이지 */}
         <TopNavBar type="Sub" headline="마이페이지" showButtons={false} />
 
-        <div className="flex flex-1 flex-col gap-4 px-6 py-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-6 py-4 pb-24">
           {/* 프로필 카드 영역 — 아직 전용 컴포넌트 없음 → red static 컨테이너 */}
           <div className="rounded-2xl bg-red-200 p-6">
             <div className="mb-4 flex items-center gap-3">
@@ -55,8 +58,16 @@ export default function MyPage() {
           </Card>
         </div>
 
-        {/* 하단 BottomNavBar 재사용 (마이 탭 활성) */}
-        <BottomNavBar active="my" onChange={() => {}} />
+        {/* FAB — 새 기록 추가 */}
+        <div className="pointer-events-none absolute inset-0 z-20">
+          <Fab
+            variant="primary"
+            size="L"
+            className="pointer-events-auto absolute bottom-6 right-6"
+            aria-label="새 기록 추가"
+            onClick={() => router.push("/")}
+          />
+        </div>
       </main>
     </div>
   );

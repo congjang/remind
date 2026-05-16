@@ -75,7 +75,7 @@ export function ToastMessage({
           <button
             type="button"
             onClick={onAction}
-            className="flex shrink-0 items-center gap-1 px-4 py-0 text-[length:var(--Typography-font-size-Label-XS,12px)] font-semibold text-[color:var(--colorElementOnContainerHighlightDefault,#fafafa)] hover:opacity-90 active:opacity-80"
+            className="flex shrink-0 cursor-pointer items-center gap-1 px-4 py-0 text-[length:var(--Typography-font-size-Label-XS,12px)] font-semibold text-[color:var(--colorElementOnContainerHighlightDefault,#fafafa)] hover:opacity-90 active:opacity-80"
             aria-label={action}
           >
             <span className="whitespace-nowrap">{action}</span>

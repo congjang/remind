@@ -197,7 +197,10 @@ export function TopNavBar({
       {isLargeTitle && (
         <>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <p className="font-[family-name:var(--Typography-font-family)] text-[28px] font-bold leading-[1.3] text-[color:var(--colorElementBase1Default)]">
+            <p
+              lang="ko"
+              className="min-w-0 text-balance [word-break:keep-all] font-[family-name:var(--Typography-font-family)] text-[22px] font-bold leading-snug text-[color:var(--colorElementBase1Default)] md:text-[28px] md:leading-[1.3]"
+            >
               {headline}
             </p>
             <p className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-S,14px)] font-semibold leading-[1.2] text-[color:var(--colorElementBase2Default)]">
@@ -262,7 +265,7 @@ export function TopNavBar({
               <button
                 type="button"
                 onClick={onSubActionClick}
-                className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-M,16px)] font-semibold leading-[1.2] text-[color:var(--colorElementOnContainerPrimaryDefault)]"
+                className="cursor-pointer font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-M,16px)] font-semibold leading-[1.2] text-[color:var(--colorElementOnContainerPrimaryDefault)] hover:cursor-pointer"
               >
                 {subActionLabel}
               </button>
@@ -317,7 +320,7 @@ export function TopNavBar({
               type="button"
               onClick={onViewModeToggle}
               aria-label={viewMode === "month" ? "주간 보기" : "월간 보기"}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[30px] bg-[var(--colorButtonContainerPrimaryDefault,#047260)] text-white"
+              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[30px] bg-[var(--colorButtonContainerPrimaryDefault,#047260)] text-white"
             >
               <span className="h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">
                 {viewMode === "month" ? <CalendarMonthIcon /> : <ViewTimelineIcon />}

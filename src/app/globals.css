@@ -1,26 +1,11 @@
 @import "tailwindcss";
-@import "./design-tokens.css";
+@import "./design-tokens/primitives.css";
+/* Grid 토큰은 `design-tokens/semantic.css`(Figma sementic.light)에 포함 */
+@import "./design-tokens/semantic.css";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
-
-  /* Grid tokens used in components (from design-tokens/grid.json + Figma) */
-  --Grid-Height-XL: 64px;
-  --Grid-Height-L: 56px;
-  --Grid-Height-M: 48px;
-  --Grid-Height-S: 40px;
-  --Grid-Height-XS: 32px;
-  --Grid-Padding-2XS: 4px;
-  --Grid-Padding-XS: 6px;
-
-  --Grid-Padding-S: 8px;
-  --Grid-Padding-L: 16px;
-  --Grid-Padding-XL: 24px;
-  --Grid-Gap-M: 8px;
-
-  --Grid-Radius-M: 8px;
-  --Grid-Radius-L: 12px;
 }
 
 @theme inline {
@@ -41,6 +26,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Hide scrollbars while keeping scroll behavior (app-like UX) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Playground/폼 입력 placeholder — colorElementBase1Disabled 연결 (우선 적용) */

@@ -58,6 +58,7 @@ export const EMOTION_ICON_NAMES = [
   "sad",
   "angry",
   "Calmness",
+  "wronged",
 ] as const;
 
 export type FunctionalIconName = (typeof FUNCTIONAL_ICON_NAMES)[number];

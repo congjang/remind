@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+export { CardOneLineNewRecordButton } from "./CardOneLineNewRecordButton";
+export type { CardOneLineNewRecordButtonProps } from "./CardOneLineNewRecordButton";
+
 export type CardVariant = "elevated" | "outlined" | "flat";
 
 export type CardProps = {
@@ -140,7 +143,10 @@ export function CardOneLineWithIcon({
 /** Figma card_1line_hor (D-24 카드) */
 export type CardOneLineHorProps = {
   label?: string;
-  /** 숫자만 전달 (예: "24") */
+  /**
+   * 마감 표시: **숫자만**이면 `D-{숫자}`로 렌더 (예: `"3"` → D-3).
+   * `오늘` / `지남` 등은 접두 `D-` 없이 그대로 표시.
+   */
   date?: string;
   className?: string;
 };
@@ -166,8 +172,14 @@ export function CardOneLineHor({
         {label}
       </p>
       <div className="flex shrink-0 items-center gap-[2px] text-[18px] font-semibold leading-[1.6]">
-        <p className="relative shrink-0 overflow-hidden">D-</p>
-        <p className="relative shrink-0 overflow-hidden">{date}</p>
+        {/^\d+$/.test(date) ? (
+          <>
+            <p className="relative shrink-0 overflow-hidden">D-</p>
+            <p className="relative shrink-0 overflow-hidden">{date}</p>
+          </>
+        ) : (
+          <p className="relative shrink-0 overflow-hidden">{date}</p>
+        )}
       </div>
     </div>
   );

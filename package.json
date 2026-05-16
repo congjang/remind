@@ -11,11 +11,20 @@
     "tokens:figma:build": "node scripts/figma/build-tokens.mjs",
     "tokens:figma:domains": "node scripts/figma/build-typography.mjs && node scripts/figma/build-colors.mjs",
     "tokens:figma:sync": "npm run tokens:figma:export && npm run tokens:figma:build && npm run tokens:figma:domains",
+    "tokens:build:semantic-css": "node scripts/figma/build-semantic-css.mjs",
+    "tokens:plugin:build:css": "node scripts/figma/build-semantic-css.mjs --input variable_plugin_JSON/tokens.json --mode all",
+    "tokens:plugin:build:global-css": "node scripts/figma/build-semantic-css.mjs --input variable_plugin_JSON/tokens.json --mode global",
+    "tokens:plugin:build:semantic-css": "node scripts/figma/build-semantic-css.mjs --input variable_plugin_JSON/tokens.json --mode semantic",
     "tokens:plugin:domains": "node scripts/figma/import-plugin-tokens.mjs",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "api:dev": "npm run dev --prefix server",
+    "api:install": "npm install --prefix server",
+    "api:db:generate": "npm run db:generate --prefix server",
+    "api:db:push": "npm run db:push --prefix server"
   },
   "dependencies": {
+    "@adailyrecord/design-tokens": "file:../adailyrecord-design-tokens",
     "clsx": "^2.1.1",
     "framer-motion": "^12.37.0",
     "next": "16.1.6",

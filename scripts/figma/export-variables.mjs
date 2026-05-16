@@ -1,24 +1,13 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getLocalVariables, getPublishedVariables } from './figma-api.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-/**
- * @param {string} p
- */
-function resolveFromRepoRoot(p) {
-  // scripts/figma/* -> repo root is two levels up
-  return path.resolve(__dirname, '..', '..', p);
-}
+import { resolveFigmaPath } from './tokenRoot.mjs';
 
 /**
  * @param {string} configPath
  */
 async function readConfig(configPath) {
-  const abs = resolveFromRepoRoot(configPath);
+  const abs = resolveFigmaPath(configPath);
   const json = JSON.parse(await (await import('node:fs/promises')).readFile(abs, 'utf8'));
   return { abs, json };
 }
@@ -37,7 +26,7 @@ async function main() {
 
   const { json: config } = await readConfig(configPath);
 
-  const rawDir = resolveFromRepoRoot(config.output?.rawExportDir ?? '.cache/figma/raw');
+  const rawDir = resolveFigmaPath(config.output?.rawExportDir ?? '.cache/figma/raw');
   await mkdir(rawDir, { recursive: true });
 
   /** @type {Array<{key: string, label?: string}>} */

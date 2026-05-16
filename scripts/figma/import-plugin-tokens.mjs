@@ -1,16 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-function resolveFromRepoRoot(p) {
-  return path.resolve(__dirname, '..', '..', p);
-}
+import { resolveFigmaPath } from './tokenRoot.mjs';
 
 async function readPluginTokens() {
-  const pluginPath = resolveFromRepoRoot('.cache/figma/raw/tokens.json');
+  const pluginPath = resolveFigmaPath('.cache/figma/raw/tokens.json');
   const raw = await readFile(pluginPath, 'utf8');
 
   // 플러그인 JSON이 문자열 안에 다시 JSON을 넣는 형태라 두 번 파싱
@@ -143,7 +136,7 @@ async function main() {
   const colors = buildColors(pluginJson);
   const grid = buildGrid(pluginJson);
 
-  const designTokensDir = resolveFromRepoRoot('design-tokens');
+  const designTokensDir = resolveFigmaPath('design-tokens');
   await mkdir(designTokensDir, { recursive: true });
 
   const colorsOut = path.join(designTokensDir, 'colors.json');

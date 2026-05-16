@@ -98,7 +98,9 @@ export function CalendarMonth({
 
       const isRangeStart = selectionMode === "range" && isSameDay(date, rangeStart);
       const isRangeEnd = selectionMode === "range" && isSameDay(date, rangeEnd);
-      const isInRange = selectionMode === "range" && inRange(date, rangeStart, rangeEnd);
+      const isInRange =
+        selectionMode === "range" &&
+        inRange(date, rangeStart ?? null, rangeEnd ?? null);
 
       week.push({
         date,

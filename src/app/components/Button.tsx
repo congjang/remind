@@ -36,7 +36,7 @@ const cn = (...classes: Parameters<typeof clsx>) => twMerge(clsx(...classes));
 
 // Figma MCP: grid/gap/m 8px, grid/padding/s 8px, grid/radius/l 12px
 const baseClasses =
-  "inline-flex items-center justify-center gap-[var(--Grid-Gap-M,8px)] px-[var(--Grid-Padding-S,8px)] rounded-[var(--Grid-Radius-L,12px)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--colorOutlinePrimaryDefault,#03584d)] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex cursor-pointer items-center justify-center gap-[var(--Grid-Gap-M,8px)] px-[var(--Grid-Padding-S,8px)] rounded-[var(--Grid-Radius-L,12px)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--colorOutlinePrimaryDefault,#03584d)] disabled:cursor-not-allowed disabled:opacity-50";
 
 // Figma MCP frame: XL=56, L=48, M=40, S=32
 const sizeClasses: Record<ButtonSize, string> = {

@@ -70,6 +70,7 @@ export function CalendarDay({
         "shrink-0 rounded-full",
         ["enable", "holiday", "today"].includes(state) && "gap-2.5",
         state === "disabled" && "cursor-not-allowed opacity-100",
+        state !== "disabled" && "cursor-pointer",
         state !== "disabled" && !isSelected && "hover:bg-[color:var(--colorBackgroundBase3Default,#e9e9eb)]",
         isOutsideMonth && "text-[color:var(--colorElementBase3Default,#8e9099)]",
         inRange &&

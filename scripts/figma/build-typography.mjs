@@ -1,13 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-function resolveFromRepoRoot(p) {
-  return path.resolve(__dirname, '..', '..', p);
-}
+import { resolveFigmaPath } from './tokenRoot.mjs';
 
 function toLowerKey(s) {
   return String(s)
@@ -76,11 +69,11 @@ async function main() {
   const configArgIdx = args.indexOf('--config');
   const configPath = configArgIdx >= 0 ? args[configArgIdx + 1] : 'design-tokens/figma.config.json';
 
-  const configAbs = resolveFromRepoRoot(configPath);
+  const configAbs = resolveFigmaPath(configPath);
   const config = JSON.parse(await readFile(configAbs, 'utf8'));
 
-  const mergedTokensPath = resolveFromRepoRoot(config.output?.mergedTokensFile ?? 'design-tokens/tokens.json');
-  const typographyOut = resolveFromRepoRoot('design-tokens/typography.json');
+  const mergedTokensPath = resolveFigmaPath(config.output?.mergedTokensFile ?? 'design-tokens/tokens.json');
+  const typographyOut = resolveFigmaPath('design-tokens/typography.json');
 
   const merged = JSON.parse(await readFile(mergedTokensPath, 'utf8'));
   const tokensTree = merged?.tokens;
