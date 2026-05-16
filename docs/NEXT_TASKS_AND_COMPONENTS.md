@@ -1,5 +1,24 @@
 # 다음 과업 (레포 기준) + 컴포넌트 교체용 백로그
 
+## 문서 맵
+
+- [first-launch/README.md](./first-launch/README.md) — 범위·스택·백엔드·위젯·푸시 문서
+- [GIT_SETUP_HISTORY.md](./GIT_SETUP_HISTORY.md) — 로컬 Git/remote 세팅 히스토리 정리
+- [DESIGN_TOKENS_RUNBOOK.md](./DESIGN_TOKENS_RUNBOOK.md) — 디자인 토큰 운영 가이드
+- [server/README.md](../server/README.md) — Phase 1 API (`remind-api`)
+- Shared types: [src/types/journal.ts](../src/types/journal.ts)
+
+## 로컬 개발 세팅
+
+`remind-api`를 띄운 뒤 프로젝트 루트에 `.env.local`을 만들고:
+
+```bash
+NEXT_PUBLIC_REMIND_API_URL=http://127.0.0.1:4000
+NEXT_PUBLIC_DEV_EMAIL=you@example.com
+```
+
+기록하기에서 **기록 저장하기** 시 `localStorage` 저장 후 같은 내용이 `POST /v1/entries/quick`으로 전송됩니다. URL을 비우면 기존처럼 로컬만 사용합니다. (`.env.example` 참고)
+
 플로우 연결·데이터 저장 **이후**에 진행하면 좋은 일을 **지금 코드베이스 기준으로만** 세 가지로 압축했습니다.  
 그 아래는 빨간 배경(`bg-red-200`)으로 표시한 **비컴포넌트 UI**를 교체 요청할 때 쓸 **후보 이름**입니다.
 
