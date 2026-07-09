@@ -9,9 +9,9 @@ import { CardOneLineWithIcon } from "./components/Card";
 import { List } from "./components/List";
 import { Button } from "./components/Button";
 import { EmotionIcon } from "./components/EmotionIcon";
+import { FunctionalIcon } from "./components/FunctionalIcon";
 import { ToastMessage } from "./components/ToastMessage";
 import type { EmotionIconName } from "../icons";
-import { ButtonLeadingIcon } from "../icons/ButtonIcons";
 import { postQuickEntry } from "./lib/remindApi";
 import {
   formatRecordHeadlineTemplate,
@@ -50,6 +50,8 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState(false);
   const [todoOn, setTodoOn] = useState(false);
   const [dueDate, setDueDate] = useState<string | null>(null); // YYYY-MM-DD
+  const [reminderOn, setReminderOn] = useState(false);
+  const [showReward, setShowReward] = useState(false);
   const [emotion, setEmotion] = useState<EmotionIconName>("happiness");
   const [weatherSnapshot, setWeatherSnapshot] =
     useState<StoredWeatherSnapshot | null>(null);
@@ -99,9 +101,12 @@ export default function Home() {
     };
   }, []);
 
-  // 할 일 OFF되면 마감일도 초기화
+  // 할 일 OFF되면 마감일·알림도 초기화
   useEffect(() => {
-    if (!todoOn) setDueDate(null);
+    if (!todoOn) {
+      setDueDate(null);
+      setReminderOn(false);
+    }
   }, [todoOn]);
 
   const refreshSavedRecordCount = useCallback(() => {
@@ -167,18 +172,22 @@ export default function Home() {
     } catch (e) {
       console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
       setSaveError(true);
+      setToastVisible(true);
+      if (toastTimeoutRef.current !== null) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setToastVisible(false);
+      }, 2000);
     }
 
-    setToastVisible(true);
+    setIsEditing(false);
+    setIsSaving(false);
+    setShowReward(true);
+  };
 
-    if (toastTimeoutRef.current !== null) {
-      window.clearTimeout(toastTimeoutRef.current);
-    }
-    toastTimeoutRef.current = window.setTimeout(() => {
-      setToastVisible(false);
-      setIsSaving(false);
-      router.push("/feed");
-    }, 900);
+  const handleGoToFeed = () => {
+    router.push("/feed");
   };
 
   return (
@@ -217,7 +226,11 @@ export default function Home() {
               setEmotion(next);
             }}
           >
-            <CardOneLineWithIcon emotion={<EmotionIcon name={emotion} />} />
+            <CardOneLineWithIcon
+              label="오늘의 기분"
+              emotion={<EmotionIcon name={emotion} />}
+              showButton={false}
+            />
           </button>
 
           <AnimatePresence mode="wait" initial={false}>
@@ -287,18 +300,38 @@ export default function Home() {
                       id: "todo-deadline",
                       variant: "labelLabel",
                       size: "M",
-                      label: "마감일",
+                      label: "언제까지?",
                       secondaryLabel: dueDate ? ymdToDot(dueDate) : "설정",
                       onClick: cycleDueDate,
                     },
                     {
                       id: "todo-reminder",
-                      variant: "labelOnly",
+                      variant: "labelSwitch",
                       size: "M",
-                      label: "알림 / 시간 선택 (예정)",
+                      label: "알림",
+                      checked: reminderOn,
+                      onSwitchChange: setReminderOn,
                     },
                   ]}
                 />
+                {reminderOn && (
+                  <List
+                    items={[
+                      {
+                        id: "todo-reminder-time",
+                        variant: "labelOnly",
+                        size: "M",
+                        label: "30분 전",
+                      },
+                      {
+                        id: "todo-reminder-add",
+                        variant: "leadingIconLabel",
+                        size: "M",
+                        label: "알림 추가",
+                      },
+                    ]}
+                  />
+                )}
               </div>
             )}
           </section>
@@ -338,22 +371,24 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-6 py-2">
+              <div className="flex items-center justify-between px-1 py-2">
                 <Button
                   onClick={() => setIsEditing(false)}
-                  aria-label="편집 닫기"
                   size="M"
-                  leadingIcon={<ButtonLeadingIcon />}
-                  className="!h-11 !w-11 rounded-[10px] bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] text-[color:var(--colorElementBase1Default,#35363a)] hover:bg-[color:var(--colorBackgroundBase3Default,#e9e9eb)] active:bg-[color:var(--colorBackgroundBase2Default,#f1f1f2)]"
+                  variant="container"
+                  level="primary"
                 >
+                  취소
                 </Button>
-                <button
-                  type="button"
+                <Button
                   onClick={() => setIsEditing(false)}
-                  className="px-1 py-2 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-M,16px)] font-semibold leading-[1.2] text-[color:var(--colorElementOnContainerPrimaryDefault,#03584d)]"
+                  size="M"
+                  variant="container"
+                  level="primary"
+                  disabled={isEmpty}
                 >
                   완료
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -389,6 +424,13 @@ export default function Home() {
                   {charCount}/{maxLength}
                 </div>
               </motion.section>
+            </div>
+
+            {/* 편집 툴바 — image/번호목록/글머리기호 (아직 삽입 기능 미연결) */}
+            <div className="flex items-center gap-1 bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)] p-2">
+              <Button size="M" variant="container" level="tertiary" leadingIcon={<FunctionalIcon name="image" />} aria-label="이미지 삽입" />
+              <Button size="M" variant="container" level="tertiary" leadingIcon={<FunctionalIcon name="num_list" />} aria-label="번호 목록" />
+              <Button size="M" variant="container" level="tertiary" leadingIcon={<FunctionalIcon name="bullet_list" />} aria-label="글머리 기호 목록" />
             </div>
 
             <div className="flex h-[336px] flex-col justify-end bg-red-200">
@@ -481,6 +523,27 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 저장 성공 리워드 화면 */}
+        {showReward && (
+          <div className="absolute inset-0 z-20 flex flex-col justify-between bg-[color:var(--colorBackgroundBase2Default,#f2f2f3)]">
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
+              <p className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-L,32px)] font-bold leading-[1.3] text-[color:var(--colorGray22,#383838)]">
+                {savedRecordCount <= 1 ? "첫 번째 기록 성공." : "기록 저장 완료."}
+              </p>
+              <p className="font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Label-S,14px)] font-semibold leading-[1.2] text-[color:var(--colorGray45,#6d6f78)]">
+                꾸준히 기록하고 기억하세요
+                <br />
+                내일은 무슨 일이 일어날 지 모릅니다.
+              </p>
+            </div>
+            <div className="px-6 pb-6 pt-3">
+              <Button size="L" variant="contained" level="primary" fullWidth onClick={handleGoToFeed}>
+                내 기록 모아보기
+              </Button>
             </div>
           </div>
         )}

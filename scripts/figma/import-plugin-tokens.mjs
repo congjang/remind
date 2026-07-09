@@ -1,3 +1,9 @@
+/**
+ * 이름과 달리 REST API 캐시(`.cache/figma/raw/tokens.json`)를 읽어
+ * `design-tokens/colors.json` + `design-tokens/grid.json`을 만든다.
+ * (Figma 플러그인 수동 export가 아님 — `tokens:figma:*` 파이프라인 소속.)
+ * grid.json은 이 스크립트만 생성하므로 `tokens:figma:domains`에서 반드시 함께 실행할 것.
+ */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resolveFigmaPath } from './tokenRoot.mjs';
