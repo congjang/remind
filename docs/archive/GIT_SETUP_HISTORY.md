@@ -1,5 +1,7 @@
 # Git 세팅 히스토리 정리 (remind-app)
 
+> **archive — 운영 문서 아님.** 특정 시점(과거 대화)에 로컬 Git/remote 상태를 1회성으로 점검한 기록입니다. 계속 갱신되지 않으며, 현재 상태를 알고 싶다면 `git remote -v` / `git status`를 직접 실행하세요. 전체 문서 지도는 [../README.md](../README.md) 참고.
+
 이 문서는 `remind-app`의 Git 관련 상태를 "무엇이 사실로 확인되었는지" 기준으로 정리한 기록입니다.
 
 ## 핵심 요약
