@@ -12,7 +12,7 @@ import { EmotionIcon } from "./components/EmotionIcon";
 import { FunctionalIcon } from "./components/FunctionalIcon";
 import { ToastMessage } from "./components/ToastMessage";
 import type { EmotionIconName } from "../icons";
-import { postQuickEntry } from "./lib/remindApi";
+import { postQuickEntry, syncPendingRecords } from "./lib/remindApi";
 import {
   formatRecordHeadlineTemplate,
   pickRandomHeadlineTemplateIndex,
@@ -21,6 +21,7 @@ import {
 import {
   getRecords,
   invalidateRecordsCache,
+  markRecordSynced,
   saveRecord,
   type StoredWeatherSnapshot,
 } from "./lib/recordsStore";
@@ -92,6 +93,19 @@ export default function Home() {
     }
   }, [isEditing]);
 
+  // ESC 키로 편집 오버레이 닫기 + 트리거 텍스트 영역으로 포커스 복귀
+  useEffect(() => {
+    if (!isEditing) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsEditing(false);
+        textareaRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isEditing]);
+
   // 언마운트 시 토스트 타이머 정리
   useEffect(() => {
     return () => {
@@ -129,6 +143,14 @@ export default function Home() {
     };
   }, [refreshSavedRecordCount]);
 
+  // 네트워크/서버 문제로 동기화 못 했던 기록을 앱 진입·온라인 복귀 시 재시도
+  useEffect(() => {
+    void syncPendingRecords();
+    const onOnline = () => void syncPendingRecords();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
+
   const recordHeadline = formatRecordHeadlineTemplate(
     RECORD_HEADLINE_TEMPLATES[headlineTemplateIndex] ??
       RECORD_HEADLINE_TEMPLATES[0] ??
@@ -153,7 +175,7 @@ export default function Home() {
     setSaveError(false);
 
     const payload = text.trim();
-    saveRecord({
+    const record = saveRecord({
       text: payload,
       isTodo: todoOn,
       dueDate: todoOn ? dueDate : null,
@@ -168,7 +190,9 @@ export default function Home() {
         emotionTagIds: [`emotion:${emotion}`],
         source: "app",
         weather: weatherSnapshot ?? undefined,
+        clientMutationId: record.id,
       });
+      markRecordSynced(record.id);
     } catch (e) {
       console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
       setSaveError(true);
@@ -255,6 +279,7 @@ export default function Home() {
                     ref={textareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, maxLength))}
+                    aria-label="지금 떠오른 문장은 무엇인가요?"
                     className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
                   />
                 </div>
@@ -411,6 +436,7 @@ export default function Home() {
                     ref={overlayTextareaRef}
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, maxLength))}
+                    aria-label="지금 떠오른 문장은 무엇인가요?"
                     className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
                   />
                 </div>
@@ -548,14 +574,22 @@ export default function Home() {
           </div>
         )}
 
-        {toastVisible && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-8 z-30 flex justify-center">
+        {/* 항상 DOM에 유지되는 aria-live 영역 — 스크린리더는 요소가 새로 삽입될 때보다
+            이미 있는 라이브 리전의 내용이 바뀔 때 더 안정적으로 announce함 */}
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          className={`pointer-events-none absolute inset-x-0 bottom-8 z-30 flex justify-center transition-opacity duration-200 ease-out ${
+            toastVisible ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {toastVisible && (
             <ToastMessage
               label={saveError ? "저장됨 · 서버 연결 실패" : "저장되었습니다"}
               variant="labelOnly"
             />
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );

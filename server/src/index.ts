@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import { PrismaClient } from "@prisma/client";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { enqueueAiJob } from "./jobs/ai-queue.js";
 
@@ -38,6 +40,8 @@ const quickEntrySchema = z.object({
     .enum(["app", "widget", "share", "notification", "import"])
     .default("app"),
   weather: weatherSnapshotSchema.optional(),
+  /** 클라이언트가 생성한 재시도용 idempotency key (recordsStore의 로컬 record id). */
+  clientMutationId: z.string().min(1).optional(),
 });
 
 const reminderSpecSchema = z.object({
@@ -48,7 +52,8 @@ const reminderSpecSchema = z.object({
 
 const pushTokenSchema = z.object({
   platform: z.enum(["ios", "android"]),
-  token: z.string().min(1),
+  // APNs/FCM 토큰은 보통 100~200자 내외 — 넉넉히 512자로 상한
+  token: z.string().min(1).max(512),
 });
 
 /**
@@ -62,7 +67,20 @@ function resolveDevEmail(headers: Record<string, string | string[] | undefined>)
 }
 
 async function main() {
-  const app = Fastify({ logger: true });
+  // bodyLimit: 기본값(1MB)에 암묵적으로 의존하지 않고 명시. quickEntrySchema의
+  // body.max(20000)보다 여유 있게 잡아 JSON 오버헤드·다른 필드를 감안.
+  const app = Fastify({ logger: true, bodyLimit: 1024 * 1024 });
+
+  // 보안 헤더 (CSP, X-Frame-Options, X-Content-Type-Options 등) — JSON API라
+  // CSP는 최소 정책으로 충분, 브라우저에서 직접 렌더링되는 리소스가 아님
+  await app.register(helmet, { contentSecurityPolicy: false });
+
+  // 레이트 리미팅 — 인증 붙기 전에도 공개 엔드포인트 스팸·DoS 방어
+  // 로그인 브루트포스 방어는 AUTH 구현 시 더 낮은 한도로 별도 적용 예정
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+  });
 
   // CORS: 개발 환경은 모든 오리진 허용, 프로덕션은 CORS_ORIGIN 환경변수로 제한
   // TODO: 프로덕션 배포 시 CORS_ORIGIN=https://your-domain.com 로 설정
@@ -104,17 +122,43 @@ async function main() {
       update: {},
     });
 
-    const entry = await prisma.journalEntry.create({
-      data: {
-        userId: user.id,
-        body: parsed.data.body,
-        emotionTagIds: parsed.data.emotionTagIds,
-        source: parsed.data.source,
-        ...(parsed.data.weather != null
-          ? { weather: parsed.data.weather as object }
-          : {}),
-      },
-    });
+    // 재시도(오프라인 복귀 등) 시 같은 clientMutationId로 중복 생성되지 않도록 멱등 처리.
+    let entry;
+    if (parsed.data.clientMutationId) {
+      const existing = await prisma.journalEntry.findUnique({
+        where: { clientMutationId: parsed.data.clientMutationId },
+      });
+      if (existing) {
+        return { entry: existing };
+      }
+    }
+    try {
+      entry = await prisma.journalEntry.create({
+        data: {
+          userId: user.id,
+          body: parsed.data.body,
+          emotionTagIds: parsed.data.emotionTagIds,
+          source: parsed.data.source,
+          clientMutationId: parsed.data.clientMutationId,
+          ...(parsed.data.weather != null
+            ? { weather: parsed.data.weather as object }
+            : {}),
+        },
+      });
+    } catch (err) {
+      // 동시 재시도로 인한 경합(unique 위반)도 멱등하게 기존 row를 반환.
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002" &&
+        parsed.data.clientMutationId
+      ) {
+        entry = await prisma.journalEntry.findUniqueOrThrow({
+          where: { clientMutationId: parsed.data.clientMutationId },
+        });
+      } else {
+        throw err;
+      }
+    }
 
     enqueueAiJob({
       entryId: entry.id,

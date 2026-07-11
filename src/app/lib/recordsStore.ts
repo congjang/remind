@@ -8,8 +8,11 @@
  *
  * 버전 히스토리:
  *   1 — 최초 (id, text, createdAt, isTodo?, dueDate?, emotion?, weather?)
+ *   2 — synced?: boolean 추가 (서버 동기화 재시도용). 기존 레코드는 재시도 폭주를
+ *       막기 위해 synced: true로 간주(서버 동기화 여부는 실제로 불명확하나,
+ *       과거엔 재시도 자체가 없었으므로 안전한 기본값).
  */
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 const META_KEY = "remind-records-meta-v1";
 
 type StoreMeta = {
@@ -55,10 +58,9 @@ function migrateRecords(records: unknown[], fromVersion: number): StoredRecord[]
 
   while (version < CURRENT_SCHEMA_VERSION) {
     switch (version) {
-      // 예시: 버전 1 → 2 마이그레이션
-      // case 1:
-      //   data = data.map((r) => ({ ...r, newField: "defaultValue" }));
-      //   break;
+      case 1:
+        data = data.map((r) => ({ ...r, synced: true }));
+        break;
       default:
         // 알 수 없는 버전: 안전하게 초기화 (데이터 손실 방지보다 무결성 우선)
         console.warn(`[recordsStore] Unknown schema version ${version}, resetting records.`);
@@ -104,6 +106,8 @@ export type StoredRecord = {
   emotion?: string;
   /** 저장 시점 날씨 (optional). */
   weather?: StoredWeatherSnapshot;
+  /** 서버(Fastify) 동기화 성공 여부. false/undefined면 재시도 대상. */
+  synced?: boolean;
 };
 
 const STORAGE_KEY = "remind-records-v1";
@@ -128,6 +132,7 @@ function validateRecord(item: unknown): item is StoredRecord {
     return false;
   if (typeof it.emotion !== "undefined" && typeof it.emotion !== "string") return false;
   if (it.weather !== undefined && !isStoredWeatherSnapshot(it.weather)) return false;
+  if (typeof it.synced !== "undefined" && typeof it.synced !== "boolean") return false;
   return true;
 }
 
@@ -194,6 +199,7 @@ export function saveRecord(params: {
     isTodo: params.isTodo,
     dueDate: params.dueDate ?? null,
     emotion: params.emotion,
+    synced: false,
     ...(params.weather ? { weather: params.weather } : {}),
   };
 
@@ -205,6 +211,19 @@ export function saveRecord(params: {
   writeMeta({ schemaVersion: CURRENT_SCHEMA_VERSION });
 
   return record;
+}
+
+/** 아직 서버 동기화에 성공하지 못한 레코드 목록 (재시도 대상). */
+export function getUnsyncedRecords(): StoredRecord[] {
+  return getRecords().filter((r) => r.synced !== true);
+}
+
+/** 서버 동기화 성공 시 호출 — 재시도 대상에서 제외. */
+export function markRecordSynced(id: string) {
+  const current = getRecords();
+  const next = current.map((r) => (r.id === id ? { ...r, synced: true } : r));
+  memoryCache = next;
+  writeRaw(next);
 }
 
 export function clearAllRecords() {
