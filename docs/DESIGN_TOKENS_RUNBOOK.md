@@ -24,7 +24,7 @@ _myproduct/
     └── src/icons/                         # 아이콘 SVG + 매핑 문서
 ```
 
-`remind-app`은 `package.json`에서 `"@adailyrecord/design-tokens": "file:../adailyrecord-design-tokens"`로 패키지를 로컬 참조합니다. **두 레포가 항상 함께 있어야** 빌드가 정상 동작합니다.
+과거 `remind-app`의 `package.json`에는 `"@adailyrecord/design-tokens": "file:../adailyrecord-design-tokens"` 의존성이 있었지만, 실제로는 어떤 코드에서도 node_modules 경유로 import되지 않아(생성된 CSS는 완전히 인라인, 토큰 빌드 스크립트도 `scripts/figma/tokenRoot.mjs`에서 파일시스템 상대경로로 직접 접근) 2026-07-10에 제거했습니다. Vercel 등 `adailyrecord-design-tokens` 형제 디렉토리가 없는 환경에서는 이 `file:` 의존성 때문에 `npm install`이 실패했기 때문입니다. **`next build`/`next dev`는 이제 두 레포가 함께 없어도 정상 동작합니다.** 토큰을 실제로 재생성(`npm run tokens:figma:*`)할 때만 형제 디렉토리가 로컬에 있어야 합니다.
 
 `src/app/globals.css`는 부팅 시 다음 순서로 토큰을 로드합니다.
 
