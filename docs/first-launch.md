@@ -160,7 +160,7 @@ Expo만으로 위젯을 "완전 관리형"으로 쓰기 어렵기 때문에, **�
 
 ### 보안 (`SECURITY-HARDENING`)
 
-- **진행중 (6/11, 2026-07-11).** 코드 감사로 찾은 공백 중 빠르게 처리 가능한 것부터 완료: `@fastify/helmet`(보안 헤더), `@fastify/rate-limit`(100req/분), `bodyLimit` 명시(1MB), `DevicePushToken.token` 길이 제한, 환경변수 재감사, `npm audit fix`(high 6건 해결). 남은 5건 중 2건(`CORS_ORIGIN`·`ALLOW_DEV_AUTH` 배포 검증)은 실제 배포 환경 접근이 필요해 보류.
+- **진행중 (7/15, 2026-07-11).** `상시 보안 방어`/`배포 전 체크리스트` 두 섹션으로 분리 관리. 상시 보안 방어 7/10 완료: `@fastify/helmet`(보안 헤더 + HSTS), `@fastify/rate-limit`(100req/분), `bodyLimit` 명시(1MB), `DevicePushToken.token` 길이 제한, 환경변수 재감사, `npm audit fix`(high 6건 해결). 배포 전 체크리스트 5개(`CORS_ORIGIN`·`ALLOW_DEV_AUTH`·로그 레벨·로그 샘플링 테스트·HSTS 프로덕션 검증)는 전부 실제 배포 환경 접근이 필요해 대기.
 - 실행용 상세 체크리스트: [PROGRESS_CHECKLIST.md 부록 C § SECURITY-HARDENING](./PROGRESS_CHECKLIST.md#security-hardening--서버-보안-강화).
 
 ### 데이터 삭제·무결성 (`DATA-INTEGRITY`)
@@ -179,6 +179,7 @@ Expo만으로 위젯을 "완전 관리형"으로 쓰기 어렵기 때문에, **�
 
 **구현 이력** — Phase 1 API·Next 앱 연동, 최신이 위:
 
+- **2026-07-11** — `SECURITY-HARDENING`을 `상시 보안 방어`/`배포 전 체크리스트` 2섹션으로 재분류, 신규 3건(에러 응답 보안·HSTS·로그 샘플링 테스트) 추가, 배포 보안 체크 워크플로우 3단계 작성. HSTS는 `@fastify/helmet` 기본값에 이미 포함돼 있어 완료 처리. 현재 7/15(상시 7/10 + 배포 전 0/5).
 - **2026-07-11** — `SECURITY-HARDENING` 6/11 완료: `server/package.json`에 `@fastify/helmet`·`@fastify/rate-limit` 추가, `server/src/index.ts`에 등록(헤더 미들웨어, 100req/분 레이트 리미팅, `bodyLimit: 1MB` 명시). `pushTokenSchema.token`에 `.max(512)`. 환경변수 재감사(커밋된 시크릿 없음 확인). `npm audit fix`로 high 취약점 6건 해결(defu, effect/@prisma, fast-uri, fastify — 남은 1건은 low·Windows dev 전용이라 보류). `/health` 응답으로 헤더·레이트리밋 헤더 실동작 확인.
 - **2026-07-11** — 코드 감사로 `SECURITY-HARDENING`(레이트 리미팅·보안 헤더 부재), `DATA-INTEGRITY`(삭제 엔드포인트 부재, `deleted` 필드 미사용) 두 백로그 항목 신설. [PROGRESS_CHECKLIST.md](./PROGRESS_CHECKLIST.md) 참고.
 - **2026-07-11** — `SYNC`(오프라인 동기화 큐): `recordsStore.ts`에 `synced?: boolean` 필드(스키마 v2, 마이그레이션 포함) + `getUnsyncedRecords()`/`markRecordSynced()`. `remindApi.ts`에 `syncPendingRecords()`(순차 처리, 첫 실패 시 중단) + `postQuickEntry()`가 `clientMutationId` 전송. `page.tsx`가 앱 마운트·`online` 이벤트 시 재시도 트리거. 서버는 `clientMutationId` 기준 `findUnique` 후 없으면 `create`, 동시 경합(P2002)도 기존 row 반환하도록 처리(`server/src/index.ts`).

@@ -1,6 +1,6 @@
 # 전체 진행 현황 체크리스트
 
-> 마지막 갱신: 2026-07-11 (라벨 체계를 코드에서 기능 이름으로 전환 + 코드 감사로 `SECURITY-HARDENING`, `DATA-INTEGRITY` 신설 + Product Integrity 상위 개념 도입 + `AUTH`/`DATA-INTEGRITY` 분류 승인 완료 + `CORE-JOURNALING`을 `KEY-FEATURES`로 개명하며 `DESIGN-SYSTEM`과 함께 부록 D→C로 이동 + 디자인 제외 최우선·최단시간 태스크 6건 완료)
+> 마지막 갱신: 2026-07-11 (`SECURITY-HARDENING`을 상시 보안 방어/배포 전 체크리스트 2단계로 재분류 + 신규 항목 3건 추가(에러 응답 보안, HSTS, 로그 샘플링 테스트) + 배포 보안 체크 워크플로우 3단계 추가)
 > 디자인 시스템 검토 및 인터페이스 디자인 작업은 이 목록에서 제외합니다.
 
 ---
@@ -11,15 +11,17 @@
 
 ```
 기능 무결성 SYNC       ██████████░░░░░░░░░░░░░░░░░░░░  4 / 12  (33%)
-리스크 방어 SECURITY   ███████████████████░░░░░░░░░░░  9 / 14  (64%)
+리스크 방어 SECURITY   █████████████████░░░░░░░░░░░░░ 10 / 18  (56%)
 ──────────────────────────────────────────────────────────────
-Product Integrity 전체 ███████████████░░░░░░░░░░░░░░░ 13 / 26  (50%)
+Product Integrity 전체 ██████████████░░░░░░░░░░░░░░░░ 14 / 30  (47%)
 ```
 
 | 축 | 완료 | 어디서 | 남음 | 어디서 |
 |---|---|---|---|---|
 | **기능 무결성 (SYNC)** | `SYNC` 4/4 | [부록 D](#sync--오프라인-동기화--저장-안전장치-2026-05-16--2026-07-11) | `SYNC-LIVE` 0/8 | [부록 C](#sync-live--서버-동기화-활성화-실사용자-연결) |
-| **리스크 방어 (SECURITY)** | `SECURITY-BASELINE` 3/3, `SECURITY-HARDENING` 6/11(2026-07-11) | [부록 D](#security-baseline--최소-보안-가드-2026-04-17) / [부록 C](#security-hardening--서버-보안-강화) | `SECURITY-HARDENING` 5/11 | [부록 C](#security-hardening--서버-보안-강화) |
+| **리스크 방어 (SECURITY)** | `SECURITY-BASELINE` 3/3, `SECURITY-HARDENING` 7/15(상시 보안 방어) | [부록 D](#security-baseline--최소-보안-가드-2026-04-17) / [부록 C § 상시 보안 방어](#상시-보안-방어) | `SECURITY-HARDENING` 3/15(상시 보안 방어 남은 것) + 5/15(배포 전 체크리스트, 전부 대기) | [부록 C § 상시 보안 방어](#상시-보안-방어) / [부록 C § 배포 전 체크리스트](#배포-전-체크리스트) |
+
+`SECURITY-HARDENING`의 완료/전체는 **상시 보안 방어 + 배포 전 체크리스트를 합산**한 숫자입니다 (7/15) — 두 섹션은 성격이 달라 체크리스트 안에서는 나눠 보여주지만, 진행률 집계는 하나로 합쳐서 봅니다.
 
 ### 분류 기준 — 새 작업은 이 기준으로 자동 분류합니다
 
@@ -90,7 +92,7 @@ Product Integrity 전체 ███████████████░░░�
 | FAB 기반 내비게이션 | ✅ 완료 | BottomNavBar 제거 |
 | 프로젝트 규칙 (CLAUDE.md) | ✅ 완료 | |
 | **`AUTH` — 인증 (JWT)** | 🔴 미완 | 프로덕션 배포 차단 |
-| **`SECURITY-HARDENING`** | 🟡 진행중 (6/11) | 헤더·레이트 리미팅·bodyLimit·토큰 길이·환경변수·`npm audit` 완료(2026-07-11), 배포 환경 검증 2건은 접근 불가로 대기 |
+| **`SECURITY-HARDENING`** | 🟡 진행중 (7/15) | 상시 보안 방어 7/10 완료(헤더·레이트 리미팅·bodyLimit·HSTS·토큰 길이·환경변수·`npm audit`), 배포 전 체크리스트 5개는 전부 배포 환경 접근이 필요해 대기 |
 | **`DATA-INTEGRITY`** | 🔴 미완 | 삭제 엔드포인트 없음 — `deleted` 필드는 스키마에만 존재 |
 | **`SYNC-LIVE` — 서버 동기화 (실 사용자 연결)** | 🔴 미완 | 개발 이메일 헤더만 동작 |
 | **`AI-PIPELINE`** | 🔴 스텁만 | BullMQ + LLM 연동 없음 |
@@ -109,7 +111,7 @@ Product Integrity 전체 ███████████████░░░�
 | `AUTH-SERVER` | **JWT 인증 구현** (서버) | `server/src/index.ts` → `resolveDevEmail()` 교체 | 실 유저 토큰 발급·검증, `ALLOW_DEV_AUTH` 플래그 제거 |
 | `AUTH-API` | **회원가입 / 로그인 API** | `server/src/` 신규 라우트 | `POST /v1/auth/signup`, `POST /v1/auth/login`, 리프레시 토큰 |
 | `AUTH-CLIENT` | **클라이언트 인증 플로우** | `src/app/lib/remindApi.ts` | Bearer 토큰 저장·갱신·만료 처리 |
-| `SECURITY-HARDENING` | **서버 보안 강화** | `server/src/index.ts`, `server/package.json` | 레이트 리미팅·보안 헤더·요청 크기 제한 (레이트 리미팅·헤더 패키지 신규 설치 필요) |
+| `SECURITY-HARDENING` | **서버 보안 강화** | `server/src/index.ts`, `server/package.json` | 상시 보안 방어(코드) + 배포 전 체크리스트(배포 환경) 둘 다 완료 |
 
 근거: [부록 A](#부록-a--저장-흐름-병목-auth-근거) — `server/src/index.ts:106-141` DB 왕복 2회 문제. 실행용 상세 체크리스트: [부록 C](#부록-c--남은-마일스톤-실행-체크리스트).
 
@@ -348,21 +350,44 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 
 ### SECURITY-HARDENING — 서버 보안 강화
 
-> 로그인 자체의 브루트포스 방어는 `AUTH` 체크리스트에 있고, 여기는 그 **바깥의 나머지 공개 엔드포인트**를 다룹니다. **2026-07-11: 헤더·레이트 리미팅·bodyLimit·토큰 길이 제한·환경변수 재감사·`npm audit`까지 6건 완료** — 실제 배포 환경 접근이 필요한 2건(`CORS_ORIGIN`, `ALLOW_DEV_AUTH` 배포 검증)만 남음.
+> 로그인 자체의 브루트포스 방어는 `AUTH` 체크리스트에 있고, 여기는 그 **바깥의 나머지 공개 엔드포인트**를 다룹니다. **2026-07-11부터 두 섹션으로 분리 관리**: 코드베이스에 항상 적용돼야 하는 [상시 보안 방어](#상시-보안-방어)와, 실제 배포 환경에서만 검증 가능한 [배포 전 체크리스트](#배포-전-체크리스트). 진행률은 두 섹션을 합산해 위 [Product Integrity 현황판](#product-integrity-현황판)에 반영됩니다.
+
+#### 상시 보안 방어
+
+코드 리뷰·로컬 실행만으로 확인·구현 가능한 항목. 커밋될 때마다 유효한 상태를 유지해야 합니다.
 
 | 구분 | 체크 항목 | 중요도 | 완료 여부 |
 |---|---|---|---|
 | 기능 | Fastify에 보안 헤더 미들웨어 추가 (`@fastify/helmet` 등 — CSP, X-Frame-Options, X-Content-Type-Options) | 상 | ☑ 완료 (2026-07-11) — `@fastify/helmet` 등록(JSON API라 CSP는 비활성). `/health` 응답에 `X-Frame-Options`·`X-Content-Type-Options`·`Strict-Transport-Security` 등 확인 |
 | 기능 | `POST /v1/entries/quick`, `/v1/reminders`, `/v1/push-tokens`에 레이트 리미팅 추가 (`@fastify/rate-limit` 등) — 인증 붙기 전에도 스팸·DoS 방어 필요 | 상 | ☑ 완료 (2026-07-11) — `@fastify/rate-limit` 글로벌 등록(100req/분). 응답 헤더 `x-ratelimit-*` 확인. 로그인 전용 더 낮은 한도는 `AUTH` 구현 시 별도 |
 | 기능 | Fastify `bodyLimit` 명시적으로 설정 (기본값 의존하지 않기) | 중 | ☑ 완료 (2026-07-11) — `Fastify({ bodyLimit: 1024*1024 })`로 1MB 명시 |
+| 기능 | **[에러 응답 보안]** Global Error Handler(`app.setErrorHandler()`)로 에러 응답 본문에 서버 내부 스택 트레이스·DB 쿼리 문구가 노출되지 않도록 처리 | 상 | ☐ 대기 — 코드 확인 결과 현재 `setErrorHandler`가 등록돼 있지 않고, `/v1/reminders`·`/v1/push-tokens` 라우트는 Prisma 호출에 `try/catch`도 없어 예외 발생 시 Prisma 원본 `error.message`(쿼리·제약조건명 등 포함 가능)가 그대로 클라이언트 응답에 실릴 수 있음 |
 | UX | 레이트 리밋 초과 시 사용자에게 명확한 안내(429) — 그냥 저장 실패로만 보이지 않게 | 중 | ☐ 대기 |
 | 데이터 | `ReminderSpec.schedule`(현재 `z.unknown()`, 크기 제한 없음) 스키마 검증 강화 또는 최소 크기 제한 | 중 | ☐ 대기 |
 | 데이터 | `DevicePushToken.token`에 길이 제한(`.max()`) 추가 | 하 | ☑ 완료 (2026-07-11) — `z.string().min(1).max(512)`로 상한 |
 | 데이터 | 환경변수 재감사 — `OPENWEATHERMAP_API_KEY`, `KAKAO_REST_API_KEY`, `DATABASE_URL` 등이 `.env`/`.env.local`에만 있고 커밋된 적 없는지 확인 (CLAUDE.md §5-1) | 상 | ☑ 완료 (2026-07-11) — `git ls-files`로 `.env`류 추적 없음, 소스 내 하드코딩 키 없음, `NEXT_PUBLIC_*`는 URL·dev 이메일뿐(시크릿 아님) 확인 |
 | 데이터 | 의존성 취약점 점검 (`npm audit` 등), `package-lock.json` 최신 유지 | 중 | ☑ 완료 (2026-07-11) — `npm audit fix`로 high 6건 해결(defu, effect/@prisma, fast-uri, fastify). 남은 1건(esbuild, low, Windows 전용 dev 서버 이슈)은 위험 낮아 보류 |
+| 예외처리 | **[통신 보안]** 모든 통신이 HTTPS로 이루어지도록 강제하는 HSTS 헤더 설정 | 상 | ☑ 완료 (2026-07-11) — `@fastify/helmet` 기본값에 이미 포함되어 있었음. `/health` 응답에서 `Strict-Transport-Security: max-age=31536000; includeSubDomains` 확인됨(추가 작업 불필요, 헤더 자체만 완료 — 실제 프로덕션에서 유효 적용되는지는 [배포 전 체크리스트](#배포-전-체크리스트) 참고) |
+
+#### 배포 전 체크리스트
+
+**실제 배포 환경에서만** 검증 가능한 항목 — 로컬에서는 확인할 수 없으므로 매 배포 직후 반드시 수행. 순서는 아래 [배포 보안 체크 워크플로우](#배포-보안-체크-워크플로우) 참고.
+
+| 구분 | 체크 항목 | 중요도 | 완료 여부 |
+|---|---|---|---|
 | 예외처리 | 프로덕션 배포 시 `CORS_ORIGIN`이 실제로 설정돼 있는지 — 기본값(모든 오리진 차단)으로 방치되지 않았는지 배포 전 확인 | 상 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가 |
 | 예외처리 | `ALLOW_DEV_AUTH` 크래시 가드가 실제 배포 환경(Railway 등)에서도 의도대로 작동하는지 배포 후 1회 검증 | 중 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가 |
-| 예외처리 | 서버 로그(`Fastify({ logger: true })`)에 사용자 본문·이메일 같은 민감정보가 그대로 찍히지 않는지 프로덕션 로그 레벨 점검 | 중 | ☐ 대기 |
+| 예외처리 | 서버 로그 레벨·설정이 프로덕션에 적합한지 점검 (`Fastify({ logger: true })` 기본 설정이 과도하게 verbose하지 않은지) | 중 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가 |
+| 예외처리 | **[로그 샘플링 테스트]** 배포 직후 프로덕션 로그를 직접 열어 실제 사용자의 민감 정보(이메일, 본문 등)가 마스킹되어 기록되는지 샘플링 테스트 수행 | 상 | ☐ 대기 — 코드 확인 결과 현재 `req.body`나 이메일을 명시적으로 로깅하는 코드는 없음(Fastify 기본 로거는 method/url/statusCode만 기록, body·헤더 미포함). 그래도 실사용자 데이터가 흐르기 시작하면 배포 직후 1회 실제 로그로 재확인 필요 |
+| 예외처리 | HSTS 헤더가 실제 프로덕션 HTTPS 응답에도 정상 적용되는지 확인 (Railway 등 TLS 종료 프록시 구조에서 `trustProxy` 설정이 필요한지 포함) | 중 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가 |
+
+#### 배포 보안 체크 워크플로우
+
+배포할 때마다 이 순서로 확인합니다. [배포 전 체크리스트](#배포-전-체크리스트) 5개 항목이 이 3단계 안에 다 들어갑니다.
+
+1. **접근 제어 확인** — 서버가 뜬 직후 바로: `ALLOW_DEV_AUTH` 크래시 가드가 실제로 서버를 막았는지/통과시켰는지, `CORS_ORIGIN`이 운영 도메인으로 제대로 설정됐는지 확인.
+2. **통신 보안 확인** — 배포된 URL에 `curl -I`로 응답 헤더를 직접 확인: `Strict-Transport-Security`가 찍히는지, 프록시(Railway 등) 뒤에서도 유효한지.
+3. **로그 확인** — 실사용자 요청이 몇 건 쌓인 뒤: 로그 레벨이 과도하게 verbose하지 않은지, 실제 로그 샘플에 이메일·본문 같은 민감정보가 그대로 찍히지 않는지 직접 열어서 확인.
 
 ### SYNC-LIVE — 서버 동기화 활성화 (실사용자 연결)
 
