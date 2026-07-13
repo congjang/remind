@@ -17,7 +17,8 @@
     "api:dev": "npm run dev --prefix server",
     "api:install": "npm install --prefix server",
     "api:db:generate": "npm run db:generate --prefix server",
-    "api:db:push": "npm run db:push --prefix server"
+    "api:db:push": "npm run db:push --prefix server",
+    "api:test": "npm test --prefix server"
   },
   "dependencies": {
     "clsx": "^2.1.1",

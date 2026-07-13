@@ -25,6 +25,7 @@ import {
   saveRecord,
   type StoredWeatherSnapshot,
 } from "./lib/recordsStore";
+import { ensureIdentityConsistency } from "./lib/session";
 
 function addDaysYmd(daysToAdd: number) {
   const d = new Date();
@@ -124,6 +125,8 @@ export default function Home() {
   }, [todoOn]);
 
   const refreshSavedRecordCount = useCallback(() => {
+    // 계정 전환(로그아웃/다른 계정 재로그인) 감지 시 로컬 기록을 지운 뒤 읽음
+    ensureIdentityConsistency();
     invalidateRecordsCache();
     setSavedRecordCount(getRecords().length);
   }, []);

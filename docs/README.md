@@ -12,11 +12,12 @@ docs/
 │                               + 부록 C(남은 마일스톤 실행 체크리스트) + 부록 D(완료된 마일스톤 이력)
 ├── first-launch.md             네이티브 첫 론칭 로드맵 — 기능적 흐름 + 01~08 결정 기록, 한 파일
 ├── DESIGN_TOKENS_RUNBOOK.md    디자인 토큰 파이프라인 운영 가이드
+├── data-migration.md           (초안) 익명/dev-placeholder 계정 → 실사용자 계정 데이터 병합 전략
 └── archive/
     └── GIT_SETUP_HISTORY.md    과거 1회성 조사 기록 — 운영 문서 아님
 ```
 
-`docs/` 안에는 이제 실질적으로 **3개 문서**(PROGRESS_CHECKLIST / first-launch / DESIGN_TOKENS_RUNBOOK)만 있습니다. 나머지는 지도(이 파일)와 보관함입니다.
+`docs/` 안에는 이제 실질적으로 **4개 문서**(PROGRESS_CHECKLIST / first-launch / DESIGN_TOKENS_RUNBOOK / data-migration)만 있습니다. 나머지는 지도(이 파일)와 보관함입니다.
 
 ## 문서별 역할 — 언제 열고, 언제 고치나
 
@@ -25,6 +26,7 @@ docs/
 | [PROGRESS_CHECKLIST.md](./PROGRESS_CHECKLIST.md) | "다음에 뭐 하지? 이 항목은 왜 필요하지? 작업 중 뭘 놓치면 안 되지? 지금까지 뭘 끝냈지?" | 항목 상태가 바뀔 때마다. 저장 흐름 코드가 바뀌면 부록 A도, red UI 컴포넌트가 바뀌면 부록 B도, 실행 세부 작업을 체크할 때마다 부록 C도, 마일스톤이 끝나면 부록 D도 |
 | [first-launch.md](./first-launch.md) | "네이티브 전환 시 이 영역을 뭐로 결정했지? 뭐가 남았지?" | 해당 섹션(01~08)이 바뀔 때 — 그 섹션의 `구현 이력`에 날짜 추가, 맨 위 상태 표도 갱신 |
 | [DESIGN_TOKENS_RUNBOOK.md](./DESIGN_TOKENS_RUNBOOK.md) | "토큰이 어디서 오는 거지?" | 토큰 파이프라인 자체가 바뀔 때 |
+| [data-migration.md](./data-migration.md) | "dev-placeholder 계정 데이터를 실사용자 계정으로 어떻게 옮기지?" | `AUTH` 구현이 진행되며 병합 전략이 구체화될 때마다 — 초안 상태 해제는 실제 구현 완료 후 |
 | [archive/GIT_SETUP_HISTORY.md](./archive/GIT_SETUP_HISTORY.md) | (거의 열 일 없음) | 갱신하지 않음 |
 
 ## 다른 곳의 문서
@@ -47,6 +49,14 @@ docs/
 ---
 
 ## 정리 이력
+
+### 2026-07-13 — 디자인 제외 백엔드·데이터 안정화 3건 (SYNC-LIVE/DATA-INTEGRITY/AUTH)
+
+"디자인 의존성 없는 백엔드·데이터 구조 안정화" 요청으로 코드 수준 작업 3건 처리:
+
+- **`SYNC-LIVE`(1건)**: 로그아웃/재로그인(다른 계정) 시 로컬 데이터 무효화 — `src/app/lib/session.ts` 신설, `ensureIdentityConsistency()`/`logout()`/`loginAs()`로 identity 변경 감지 시 `memoryCache`·`localStorage` 기록을 지움. `page.tsx`·`feed/page.tsx` 마운트 시점에 연결.
+- **`DATA-INTEGRITY`(1건)**: `DELETE /v1/entries/:id` 소프트 삭제 엔드포인트 구현(`JournalEntry.deleted` 사용, `body`는 불변 유지). 테스트 우선으로 검증하기 위해 `server/src/app.ts`(라우트)와 `server/src/index.ts`(부트스트랩)를 분리하고 `vitest` 도입, in-memory Prisma 대역으로 인증·소유권·멱등성 5개 케이스 테스트 작성·통과 확인(`server/src/app.test.ts`).
+- **`AUTH`(문서 초안 1건)**: dev-placeholder 계정(`dev@local.invalid` 등) 데이터를 실사용자 계정으로 병합하는 전략 초안 [`data-migration.md`](./data-migration.md) 작성 — 로컬 미동기화 데이터 업로드(A)와 서버 dev-placeholder 재소유(B) 두 갈래로 분리, 열린 질문(제품 결정 필요) 명시.
 
 ### 2026-07-11 — `SECURITY-HARDENING` 2단계 재분류 + 신규 항목 3건
 

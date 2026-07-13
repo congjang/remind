@@ -1,6 +1,6 @@
 # 전체 진행 현황 체크리스트
 
-> 마지막 갱신: 2026-07-11 (`SECURITY-HARDENING`을 상시 보안 방어/배포 전 체크리스트 2단계로 재분류 + 신규 항목 3건 추가(에러 응답 보안, HSTS, 로그 샘플링 테스트) + 배포 보안 체크 워크플로우 3단계 추가)
+> 마지막 갱신: 2026-07-13 (디자인 제외 백엔드·데이터 안정화 3건: `SYNC-LIVE` 로그아웃/재로그인 로컬 데이터 무효화, `DATA-INTEGRITY` 소프트 삭제 엔드포인트 + 테스트, `AUTH` 데이터 마이그레이션 전략 초안)
 > 디자인 시스템 검토 및 인터페이스 디자인 작업은 이 목록에서 제외합니다.
 
 ---
@@ -10,15 +10,15 @@
 `SYNC`(기능 무결성)와 `SECURITY`(리스크 방어)는 판단 기준과 우선순위 논리가 다른 별개 축이지만, 둘 다 "제품이 사용자를 배신하지 않는다"는 같은 상위 목표를 섬깁니다. 이 상위 개념을 **Product Integrity**로 정의하고, 아래 두 축은 **이원 관리**(따로 추적, 합치지 않음) 합니다.
 
 ```
-기능 무결성 SYNC       ██████████░░░░░░░░░░░░░░░░░░░░  4 / 12  (33%)
+기능 무결성 SYNC       ████████████░░░░░░░░░░░░░░░░░░  5 / 12  (42%)
 리스크 방어 SECURITY   █████████████████░░░░░░░░░░░░░ 10 / 18  (56%)
 ──────────────────────────────────────────────────────────────
-Product Integrity 전체 ██████████████░░░░░░░░░░░░░░░░ 14 / 30  (47%)
+Product Integrity 전체 ███████████████░░░░░░░░░░░░░░░ 15 / 30  (50%)
 ```
 
 | 축 | 완료 | 어디서 | 남음 | 어디서 |
 |---|---|---|---|---|
-| **기능 무결성 (SYNC)** | `SYNC` 4/4 | [부록 D](#sync--오프라인-동기화--저장-안전장치-2026-05-16--2026-07-11) | `SYNC-LIVE` 0/8 | [부록 C](#sync-live--서버-동기화-활성화-실사용자-연결) |
+| **기능 무결성 (SYNC)** | `SYNC` 4/4, `SYNC-LIVE` 1/8(로그아웃/재로그인 로컬 데이터 무효화, 2026-07-13) | [부록 D](#sync--오프라인-동기화--저장-안전장치-2026-05-16--2026-07-11) / [부록 C § SYNC-LIVE](#sync-live--서버-동기화-활성화-실사용자-연결) | `SYNC-LIVE` 7/8 | [부록 C](#sync-live--서버-동기화-활성화-실사용자-연결) |
 | **리스크 방어 (SECURITY)** | `SECURITY-BASELINE` 3/3, `SECURITY-HARDENING` 7/15(상시 보안 방어) | [부록 D](#security-baseline--최소-보안-가드-2026-04-17) / [부록 C § 상시 보안 방어](#상시-보안-방어) | `SECURITY-HARDENING` 3/15(상시 보안 방어 남은 것) + 5/15(배포 전 체크리스트, 전부 대기) | [부록 C § 상시 보안 방어](#상시-보안-방어) / [부록 C § 배포 전 체크리스트](#배포-전-체크리스트) |
 
 `SECURITY-HARDENING`의 완료/전체는 **상시 보안 방어 + 배포 전 체크리스트를 합산**한 숫자입니다 (7/15) — 두 섹션은 성격이 달라 체크리스트 안에서는 나눠 보여주지만, 진행률 집계는 하나로 합쳐서 봅니다.
@@ -91,14 +91,14 @@ Product Integrity 전체 ██████████████░░░░�
 | `SAVE-ERROR-TOAST` — 네트워크 실패 토스트 | ✅ 완료 | 실패 시 `ToastMessage`로 "저장됨 · 서버 연결 실패" 표시 (2026-07-09부터 이미 있었음) |
 | FAB 기반 내비게이션 | ✅ 완료 | BottomNavBar 제거 |
 | 프로젝트 규칙 (CLAUDE.md) | ✅ 완료 | |
-| **`AUTH` — 인증 (JWT)** | 🔴 미완 | 프로덕션 배포 차단 |
+| **`AUTH` — 인증 (JWT)** | 🔴 미완 (1/13) | 프로덕션 배포 차단. 데이터 마이그레이션 전략 초안만 작성됨([data-migration.md](./data-migration.md), 2026-07-13) — JWT 구현 자체는 미착수 |
 | **`SECURITY-HARDENING`** | 🟡 진행중 (7/15) | 상시 보안 방어 7/10 완료(헤더·레이트 리미팅·bodyLimit·HSTS·토큰 길이·환경변수·`npm audit`), 배포 전 체크리스트 5개는 전부 배포 환경 접근이 필요해 대기 |
-| **`DATA-INTEGRITY`** | 🔴 미완 | 삭제 엔드포인트 없음 — `deleted` 필드는 스키마에만 존재 |
-| **`SYNC-LIVE` — 서버 동기화 (실 사용자 연결)** | 🔴 미완 | 개발 이메일 헤더만 동작 |
+| **`DATA-INTEGRITY`** | 🟡 진행중 (1/10) | `DELETE /v1/entries/:id` 소프트 삭제 구현(`deleted` 필드 사용, `body` 불변 유지, 2026-07-13). 삭제 UI·회원 탈퇴 정책 등 나머지 9개는 대기 |
+| **`SYNC-LIVE` — 서버 동기화 (실 사용자 연결)** | 🟡 진행중 (1/8) | 로그아웃/재로그인 시 로컬 데이터 무효화 구현(`session.ts`, 2026-07-13). `X-Dev-Email` → `Authorization: Bearer` 교체 등 나머지 7개는 대기 |
 | **`AI-PIPELINE`** | 🔴 스텁만 | BullMQ + LLM 연동 없음 |
 | **`PUSH-NOTIFICATION`** | 🔴 미완 | DB 테이블만 존재 |
 | **`NATIVE-APP`** | 🔴 미착수 | README 플레이스홀더만 |
-| `TESTING` | 🔴 없음 | |
+| `TESTING` | 🟡 시작 | 서버 `vitest` 도입, 소프트 삭제 라우트 5개 케이스만 커버(2026-07-13). 프론트엔드·나머지 라우트는 아직 없음 |
 
 ---
 
@@ -108,10 +108,10 @@ Product Integrity 전체 ██████████████░░░░�
 
 | 태그 | 항목 | 파일·위치 | 완료 기준 |
 |---|------|-----------|-----------|
-| `AUTH-SERVER` | **JWT 인증 구현** (서버) | `server/src/index.ts` → `resolveDevEmail()` 교체 | 실 유저 토큰 발급·검증, `ALLOW_DEV_AUTH` 플래그 제거 |
+| `AUTH-SERVER` | **JWT 인증 구현** (서버) | `server/src/app.ts` → `resolveDevEmail()` 교체 | 실 유저 토큰 발급·검증, `ALLOW_DEV_AUTH` 플래그 제거 |
 | `AUTH-API` | **회원가입 / 로그인 API** | `server/src/` 신규 라우트 | `POST /v1/auth/signup`, `POST /v1/auth/login`, 리프레시 토큰 |
 | `AUTH-CLIENT` | **클라이언트 인증 플로우** | `src/app/lib/remindApi.ts` | Bearer 토큰 저장·갱신·만료 처리 |
-| `SECURITY-HARDENING` | **서버 보안 강화** | `server/src/index.ts`, `server/package.json` | 상시 보안 방어(코드) + 배포 전 체크리스트(배포 환경) 둘 다 완료 |
+| `SECURITY-HARDENING` | **서버 보안 강화** | `server/src/app.ts`, `server/package.json` | 상시 보안 방어(코드) + 배포 전 체크리스트(배포 환경) 둘 다 완료 |
 
 근거: [부록 A](#부록-a--저장-흐름-병목-auth-근거) — `server/src/index.ts:106-141` DB 왕복 2회 문제. 실행용 상세 체크리스트: [부록 C](#부록-c--남은-마일스톤-실행-체크리스트).
 
@@ -124,7 +124,7 @@ Product Integrity 전체 ██████████████░░░░�
 | `EMPTY-UI` | **피드 빈 상태 UX** | `src/app/feed/page.tsx` | 기록 0건일 때 샘플 데이터 대신 빈 상태 화면 + 안내 문구 |
 | `PROFILE-UI` | **Red UI 교체 — 마이페이지** | `src/app/my/page.tsx` | `MyProfileCard`, `SettingsSection` 구현 (Figma 설계 후) |
 | `EDITOR-UI` | **Red UI 교체 — 편집 오버레이** | `src/app/page.tsx` 편집 오버레이 | `RecordEditStatusBar`, `RecordEditToolbar` 구현; `IosKeyboardMock` 제거(네이티브 이전 시) |
-| `DATA-INTEGRITY` | **데이터 삭제·무결성 보장** | `server/src/index.ts`, `server/prisma/schema.prisma` | 삭제 엔드포인트 구현, `body` 불변성 코드로 강제, 백업 복구 1회 검증 |
+| `DATA-INTEGRITY` | **데이터 삭제·무결성 보장** | `server/src/app.ts`, `server/prisma/schema.prisma` | 삭제 엔드포인트 구현(✓ 2026-07-13), `body` 불변성 코드로 강제, 백업 복구 1회 검증 |
 
 > ~~`SAVE-GUARD`~~, ~~`SAVE-ERROR-TOAST`~~ — **이미 완료돼 있었음.** 위 [현재 위치](#현재-위치-전체-프로세스-기준) 표로 이동.
 
@@ -193,8 +193,8 @@ Product Integrity 전체 ██████████████░░░░�
         └─▶ (비동기, best-effort — 실패해도 위 동기 경로엔 영향 없음)
               4. postQuickEntry()               remindApi.ts:31  (clientMutationId: record.id 포함)
               5. POST /v1/entries/quick         X-Dev-Email 헤더 (dev 전용 인증)
-              6. zod 검증 + user.upsert         server/src/index.ts:90
-              7. clientMutationId 멱등 upsert    server/src/index.ts:109-141
+              6. zod 검증 + user.upsert         server/src/app.ts:106  (2026-07-13: index.ts→app.ts 분리, 테스트 가능하게 buildApp()으로 추출)
+              7. clientMutationId 멱등 upsert    server/src/app.ts:123-146
               8. enqueueAiJob() stub            server/src/jobs/ai-queue.ts (현재 no-op)
               9. 성공 시 markRecordSynced()      page.tsx:182 / recordsStore.ts:222
 
@@ -209,7 +209,7 @@ Product Integrity 전체 ██████████████░░░░�
 
 | 심각도 | 위치 | 문제 | 개선 방향 | 관련 |
 |---|---|---|---|---|
-| 🟠 주의 | `server/src/index.ts:90-141` | 요청마다 `user.upsert` + `journalEntry` 조회/생성으로 DB 왕복 2~3회 — 서버 응답 지연은 곧 동기화 실패 창을 넓히는 요인 | `AUTH` 전환 시 user 조회를 인증 미들웨어로 옮기고 핸들러는 `userId`만 받아 왕복 줄이기 | `AUTH` |
+| 🟠 주의 | `server/src/app.ts:106-146` | 요청마다 `user.upsert` + `journalEntry` 조회/생성으로 DB 왕복 2~3회 — 서버 응답 지연은 곧 동기화 실패 창을 넓히는 요인 | `AUTH` 전환 시 user 조회를 인증 미들웨어로 옮기고 핸들러는 `userId`만 받아 왕복 줄이기 | `AUTH` |
 | 🟡 참고 | `recordsStore.ts:162` (`writeRaw()`) | 저장마다 전체 기록 배열을 통째로 `JSON.stringify` — 기록 수천 건 누적 시 저장 지연 가능성 (현재는 체감 안 됨) | 급하지 않음. 체감 지연 발생 시 IndexedDB 전환 또는 오래된 기록 아카이빙 | — |
 | 🟡 참고 | `recordsStore.ts` (storage 이벤트 리스너 없음) | `memoryCache`가 모듈 전역이라 다른 탭의 저장을 현재 탭이 못 봄 | `window.addEventListener("storage", invalidateRecordsCache)` 추가로 간단히 해결 | — |
 
@@ -219,8 +219,8 @@ Product Integrity 전체 ██████████████░░░░�
 
 | 작업 | 수정 체인 |
 |---|---|
-| 기록에 새 필드 추가 | `src/types/journal.ts` → `recordsStore.ts` (타입 + validate + 스키마 버전↑) → `page.tsx` UI/state → `remindApi.ts` payload → `server/src/index.ts` zod 스키마 → `schema.prisma` → `prisma migrate dev` |
-| 인증 방식 교체 (`AUTH`) | `server/src/index.ts`의 `resolveDevEmail()` 함수 하나만 교체 |
+| 기록에 새 필드 추가 | `src/types/journal.ts` → `recordsStore.ts` (타입 + validate + 스키마 버전↑) → `page.tsx` UI/state → `remindApi.ts` payload → `server/src/app.ts` zod 스키마 → `schema.prisma` → `prisma migrate dev` |
+| 인증 방식 교체 (`AUTH`) | `server/src/app.ts`의 `resolveDevEmail()` 함수 하나만 교체. `index.ts`는 부트스트랩(프로덕션 가드 + `listen()`)만 담당하므로 건드릴 필요 없음 |
 | AI 요약/분석 파이프라인 연결 (`AI-PIPELINE`) | `server/src/jobs/ai-queue.ts`의 `enqueueAiJob()` stub을 BullMQ + Redis 구현으로 교체 (호출부는 그대로) |
 | 재시도 정책 조정(지수 백오프 등, `SYNC` 확장) | `remindApi.ts`의 `syncPendingRecords()` — 지금은 실패 시 즉시 중단 후 다음 트리거(앱 시작/`online`)까지 대기하는 단순 정책 |
 | 모아보기(피드)에 새 표시 추가 | `recordsStore.ts`의 `getRecords()` 반환 타입 확인 → `feed/page.tsx`에서 렌더링 |
@@ -315,11 +315,11 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 
 ### DATA-INTEGRITY — 데이터 삭제·무결성 보장
 
-> 코드 확인 결과: `JournalEntry.deleted` 필드가 스키마에 있지만 이 값을 세팅하는 코드 경로가 어디에도 없습니다 — 삭제 기능 자체가 없다는 뜻입니다. `body` "절대 수정 금지"(CLAUDE.md §3-3)도 지금은 update 라우트가 없어서 우연히 지켜지고 있을 뿐, 코드로 강제되진 않습니다.
+> **2026-07-13 갱신**: `JournalEntry.deleted`를 실제로 세팅하는 소프트 삭제 엔드포인트(`DELETE /v1/entries/:id`)를 구현했습니다(아래 표 1번째 행). 나머지 9개 항목(삭제 UI, 계정 삭제 정책, export, `body` 불변성 강제, 백업 검증 등)은 여전히 대기 상태입니다. `body` "절대 수정 금지"(CLAUDE.md §3-3)는 소프트 삭제 라우트가 `deleted` 필드만 건드리도록 구현했지만, 아직 코드로 강제하는 별도 가드(update 라우트 자체가 없어 우연히 지켜지는 상태)는 아닙니다.
 
 | 구분 | 체크 항목 | 중요도 | 완료 여부 |
 |---|---|---|---|
-| 기능 | `JournalEntry` 삭제 엔드포인트 구현 — 기존 `deleted` 필드를 실제로 사용하는 soft delete부터 | 상 | ☐ 대기 |
+| 기능 | `JournalEntry` 삭제 엔드포인트 구현 — 기존 `deleted` 필드를 실제로 사용하는 soft delete부터 | 상 | ☑ 완료 (2026-07-13) — `DELETE /v1/entries/:id`(`server/src/app.ts`). 소유권 검증(다른 사용자 소유면 404), 이미 삭제된 건 재호출해도 멱등하게 200. `body`는 절대 건드리지 않음. `server/src/app.test.ts` 5개 케이스(401/404/삭제 성공+body 불변/소유권/멱등)로 검증 완료(`npm --prefix server test`) |
 | 기능 | 클라이언트(피드·마이)에 기록 삭제 UI 추가, 삭제 요청이 로컬(`recordsStore`)과 서버 양쪽에 반영되는지 확인 | 상 | ☐ 대기 |
 | 기능 | 계정 삭제(회원 탈퇴) 시 관련 데이터(엔트리·AI 산출물·푸시 토큰) 처리 정책 결정 — 즉시 삭제 vs 유예 기간 | 중 | ☐ 대기 |
 | 기능 | 데이터 내보내기(export) — 사용자가 자기 기록을 JSON/텍스트로 받아가는 최소 기능 | 중 | ☐ 대기 |
@@ -341,7 +341,7 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 | UX | 토큰 만료 시 조용히 로그인 화면으로 유도 (세션 끊김을 오류로 오해하지 않게) | 중 | ☐ 대기 |
 | 데이터 | 비밀번호는 Argon2/bcrypt 해시만 저장 — 평문 저장 코드가 어디에도 없는지 재확인 | 상 | ☐ 대기 |
 | 데이터 | JWT 시크릿은 `.env`에만 — `NEXT_PUBLIC_` 노출·커밋 여부 확인 (CLAUDE.md §5-1) | 상 | ☐ 대기 |
-| 데이터 | 기존 `dev@local.invalid` 등 익명 계정에 쌓인 `JournalEntry`를 실사용자 계정으로 옮기는 마이그레이션 전략 | 중 | ☐ 대기 |
+| 데이터 | 기존 `dev@local.invalid` 등 익명 계정에 쌓인 `JournalEntry`를 실사용자 계정으로 옮기는 마이그레이션 전략 | 중 | ☑ 완료 (2026-07-13) — 전략 초안 작성: [`data-migration.md`](./data-migration.md). 로컬 미동기화 데이터 업로드(A)와 서버 dev-placeholder 재소유(B) 두 갈래로 분리, 실행 여부는 제품 결정 필요(문서 내 "열린 질문" 참고). 실제 마이그레이션 엔드포인트 구현은 JWT 도입 시점에 별도 작업 |
 | 예외처리 | **오프라인 재시도 큐(`SYNC`)가 401(토큰 만료)을 받으면 무한 재시도에 빠지지 않는지** — 지금은 실패 원인 구분 없이 그냥 중단하는데, 401은 "토큰 갱신 시도 → 실패 시 재로그인 유도"로 별도 분기 필요 | 상 | ☐ 대기 |
 | 예외처리 | 여러 탭에서 동시에 토큰 갱신 시 경합 (refresh rotation 사용 시 한쪽 refresh token이 무효화될 수 있음) | 중 | ☐ 대기 |
 | 예외처리 | 로그인 엔드포인트에 rate limiting (브루트포스 방어) | 상 | ☐ 대기 |
@@ -400,7 +400,7 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 | 데이터 | 로컬 `StoredRecord` ↔ 서버 `JournalEntry` 최초 동기화 병합 전략 (다중 기기 사용 시 충돌 가능성) | 상 | ☐ 대기 |
 | 데이터 | 대량 초기 업로드에도 기존 `clientMutationId` 멱등 처리(`SYNC`)가 그대로 재사용되는지 확인 | 중 | ☐ 대기 |
 | 예외처리 | 대량 업로드 중 일부 실패 시 전체 롤백 대신 실패 건만 재시도 큐에 남기기 | 상 | ☐ 대기 |
-| 예외처리 | **로그아웃/재로그인(다른 계정) 시 `memoryCache`·로컬 데이터를 무효화해 이전 계정 기록이 새 계정에 노출되지 않는지** — 개인정보 유출 등급 이슈 | 상 | ☐ 대기 |
+| 예외처리 | **로그아웃/재로그인(다른 계정) 시 `memoryCache`·로컬 데이터를 무효화해 이전 계정 기록이 새 계정에 노출되지 않는지** — 개인정보 유출 등급 이슈 | 상 | ☑ 완료 (2026-07-13) — [`src/app/lib/session.ts`](../src/app/lib/session.ts) 신설. `ensureIdentityConsistency()`가 마지막으로 로컬 데이터를 채운 identity와 현재 identity를 비교해 다르면 `clearAllRecords()` + `invalidateRecordsCache()`로 즉시 무효화. `logout()`/`loginAs()`로 명시적 진입점도 제공. `page.tsx`·`feed/page.tsx`의 기록 조회 시점(마운트·포커스)마다 호출되도록 연결. 최초 실행(마커 없음)은 무효화하지 않아 기존 로컬 전용 데이터를 첫 실행에 날리지 않음 |
 
 ---
 

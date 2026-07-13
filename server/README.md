@@ -31,9 +31,26 @@ curl -sS -X POST http://localhost:4000/v1/entries/quick \
   -d '{"body":"hello","emotionTagIds":[],"source":"widget"}'
 ```
 
+## Example: soft-delete an entry
+
+```bash
+curl -sS -X DELETE http://localhost:4000/v1/entries/<entry-id> \
+  -H 'X-Dev-Email: you@example.com'
+```
+
+Sets `JournalEntry.deleted = true` only — `body` is never touched (append-only policy). Idempotent: calling again on an already-deleted entry still returns 200. Returns 404 if the entry doesn't exist or belongs to a different user (no existence leak).
+
 ## Example: reminder spec + push token
 
 See [docs/first-launch.md § 06](../docs/first-launch.md#06-푸시리마인더).
+
+## Testing
+
+```bash
+npm test
+```
+
+Route logic (auth, ownership, idempotency) is covered in `src/app.test.ts` against an in-memory Prisma double — no live Postgres needed. `src/app.ts` exports `buildApp()` (routes only, no `listen()`) so tests can `inject()` requests directly; `src/index.ts` is just the production bootstrap (safety guard + `listen()`).
 
 ## Connecting the Next.js frontend
 

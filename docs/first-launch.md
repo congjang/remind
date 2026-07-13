@@ -153,9 +153,10 @@ Expo만으로 위젯을 "완전 관리형"으로 쓰기 어렵기 때문에, **�
 - **객체 저장**: 이미지/첨부가 생기면 S3 호환 버킷 (1.0에서는 생략 가능).
 - **작업 큐**: Redis + BullMQ (AI 잡·집계) — [server/src/jobs/ai-queue.ts](../server/src/jobs/ai-queue.ts) 스텁.
 
-### 동기화 (`SYNC`)
+### 동기화 (`SYNC` / `SYNC-LIVE`)
 
-- **웹 프로토타입: 구현 완료 (2026-07-11).** `localStorage` 자체를 아웃박스로 써서 `synced: false`인 기록을 앱 시작·`online` 이벤트 시 재전송(`syncPendingRecords()`), 서버는 `clientMutationId` 기준 멱등 upsert. 코드 레벨 근거는 [PROGRESS_CHECKLIST.md 부록 A](./PROGRESS_CHECKLIST.md#부록-a--저장-흐름-병목-auth-근거) 참고.
+- **`SYNC` 웹 프로토타입: 구현 완료 (2026-07-11).** `localStorage` 자체를 아웃박스로 써서 `synced: false`인 기록을 앱 시작·`online` 이벤트 시 재전송(`syncPendingRecords()`), 서버는 `clientMutationId` 기준 멱등 upsert. 코드 레벨 근거는 [PROGRESS_CHECKLIST.md 부록 A](./PROGRESS_CHECKLIST.md#부록-a--저장-흐름-병목-auth-근거) 참고.
+- **`SYNC-LIVE` 진행중 (1/8, 2026-07-13).** 로그아웃/재로그인(다른 계정) 시 로컬 데이터 무효화 정책을 [`src/app/lib/session.ts`](../src/app/lib/session.ts)로 구현 — identity가 바뀌면 `memoryCache`·`localStorage` 기록을 지워 이전 계정 기록이 새 계정에 노출되지 않도록 함. 나머지 7개(`Authorization: Bearer` 교체, 로컬→서버 최초 업로드 온보딩 등)는 실 로그인(`AUTH`) 구현 이후로 대기.
 - **네이티브 이전 시:** 위 패턴을 그대로 유지하되 저장소만 로컬 DB(SQLite/Watermelon 등)로 교체하면 됨 — `synced` 플래그·`clientMutationId` 멱등 계약은 이미 서버·클라이언트 양쪽에 있으므로 API 재사용 가능.
 
 ### 보안 (`SECURITY-HARDENING`)
@@ -165,7 +166,7 @@ Expo만으로 위젯을 "완전 관리형"으로 쓰기 어렵기 때문에, **�
 
 ### 데이터 삭제·무결성 (`DATA-INTEGRITY`)
 
-- **미완 (2026-07-11 코드 감사).** `JournalEntry.deleted` 필드는 스키마에 있지만 세팅하는 코드 경로가 없어 삭제 기능 자체가 없음. `body` 불변성(CLAUDE.md §3-3)도 update 라우트가 없어서 우연히 지켜지고 있을 뿐, 코드로 강제되지 않음.
+- **진행중 (1/10, 2026-07-13).** `DELETE /v1/entries/:id` 소프트 삭제 엔드포인트 구현 — `JournalEntry.deleted`만 세팅, `body`는 건드리지 않음. 소유권 검증(다른 사용자 소유면 404), 이미 삭제된 건 재호출해도 멱등하게 200. `server/src/app.test.ts`(vitest, in-memory Prisma 대역)로 401/404/삭제 성공+body 불변/소유권/멱등 5개 케이스 검증. 나머지(삭제 UI, 계정 삭제 정책, export, `body` 불변성 강제 가드, 백업 검증)는 대기.
 - 실행용 상세 체크리스트: [PROGRESS_CHECKLIST.md 부록 C § DATA-INTEGRITY](./PROGRESS_CHECKLIST.md#data-integrity--데이터-삭제무결성-보장).
 
 ### 백업
@@ -179,6 +180,7 @@ Expo만으로 위젯을 "완전 관리형"으로 쓰기 어렵기 때문에, **�
 
 **구현 이력** — Phase 1 API·Next 앱 연동, 최신이 위:
 
+- **2026-07-13** — 디자인 제외 백엔드·데이터 안정화 3건. `SYNC-LIVE`: 로그아웃/재로그인 시 로컬 데이터 무효화(`src/app/lib/session.ts`, `ensureIdentityConsistency()`/`logout()`/`loginAs()`). `DATA-INTEGRITY`: `DELETE /v1/entries/:id` 소프트 삭제 구현 — 테스트 가능하도록 `server/src/index.ts`(부트스트랩)에서 `server/src/app.ts`(`buildApp()`, 라우트 전체)를 분리하고 `vitest` 도입, in-memory Prisma 대역으로 5개 케이스 작성·통과(`server/src/app.test.ts`). `AUTH`: dev-placeholder 계정 데이터를 실사용자 계정으로 옮기는 마이그레이션 전략 초안 [`data-migration.md`](./data-migration.md) 작성.
 - **2026-07-11** — `SECURITY-HARDENING`을 `상시 보안 방어`/`배포 전 체크리스트` 2섹션으로 재분류, 신규 3건(에러 응답 보안·HSTS·로그 샘플링 테스트) 추가, 배포 보안 체크 워크플로우 3단계 작성. HSTS는 `@fastify/helmet` 기본값에 이미 포함돼 있어 완료 처리. 현재 7/15(상시 7/10 + 배포 전 0/5).
 - **2026-07-11** — `SECURITY-HARDENING` 6/11 완료: `server/package.json`에 `@fastify/helmet`·`@fastify/rate-limit` 추가, `server/src/index.ts`에 등록(헤더 미들웨어, 100req/분 레이트 리미팅, `bodyLimit: 1MB` 명시). `pushTokenSchema.token`에 `.max(512)`. 환경변수 재감사(커밋된 시크릿 없음 확인). `npm audit fix`로 high 취약점 6건 해결(defu, effect/@prisma, fast-uri, fastify — 남은 1건은 low·Windows dev 전용이라 보류). `/health` 응답으로 헤더·레이트리밋 헤더 실동작 확인.
 - **2026-07-11** — 코드 감사로 `SECURITY-HARDENING`(레이트 리미팅·보안 헤더 부재), `DATA-INTEGRITY`(삭제 엔드포인트 부재, `deleted` 필드 미사용) 두 백로그 항목 신설. [PROGRESS_CHECKLIST.md](./PROGRESS_CHECKLIST.md) 참고.

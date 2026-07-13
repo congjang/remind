@@ -38,6 +38,7 @@ import {
   invalidateRecordsCache,
   type StoredRecord,
 } from "../lib/recordsStore";
+import { ensureIdentityConsistency } from "../lib/session";
 
 type TimelineDirection = "horizontal" | "vertical";
 
@@ -163,6 +164,8 @@ export default function FeedPage() {
   const [viewportWidth, setViewportWidth] = useState(390);
 
   const refreshRecords = useCallback(() => {
+    // 계정 전환(로그아웃/다른 계정 재로그인) 감지 시 로컬 기록을 지운 뒤 읽음
+    ensureIdentityConsistency();
     invalidateRecordsCache();
     setStoredRecords(getRecords());
   }, []);

@@ -8,24 +8,11 @@ import {
   markRecordSynced,
   type StoredWeatherSnapshot,
 } from "./recordsStore";
+import { getCurrentIdentity } from "./session";
 
 function baseUrl() {
   const raw = process.env.NEXT_PUBLIC_REMIND_API_URL?.trim();
   return raw ? raw.replace(/\/$/, "") : "";
-}
-
-function devEmail(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_DEV_EMAIL?.trim();
-  if (fromEnv) return fromEnv;
-  if (typeof window !== "undefined") {
-    try {
-      const stored = window.localStorage.getItem("remind-dev-email");
-      if (stored?.trim()) return stored.trim();
-    } catch {
-      // ignore
-    }
-  }
-  return "dev@local.invalid";
 }
 
 export async function postQuickEntry(params: {
@@ -44,7 +31,7 @@ export async function postQuickEntry(params: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Dev-Email": devEmail(),
+      "X-Dev-Email": getCurrentIdentity(),
     },
     body: JSON.stringify({
       body: params.body,
