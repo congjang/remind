@@ -37,6 +37,14 @@ docs/
 - [variable_plugin_JSON/README.md](../variable_plugin_JSON/README.md) — deprecated 토큰 경로 안내
 - [src/types/journal.ts](../src/types/journal.ts) — 공유 타입 (문서가 아니라 코드가 원본)
 
+## Claude 아티팩트 (시각화 스냅샷)
+
+md가 아니라 Claude Code 아티팩트로만 존재하는 시각 자료입니다 — md처럼 git으로 버전 관리되지 않고, 재요청 시 최신 상태로 다시 그려집니다. 관련 md가 바뀌면 이 링크들도 갱신 대상입니다.
+
+- [PM 마스터 체크리스트](https://claude.ai/code/artifact/90835380-3597-45fb-9e97-36e796a9699d) — `PROGRESS_CHECKLIST.md` 부록 C·D를 시각화 + QA 시나리오 태그·검증 가이드·자동화 우선순위(단계·심각도)
+- [통합 프로덕트 플로우차트](https://claude.ai/code/artifact/c9440ba9-dfef-45ef-bcce-f72d78eb32f7) — 저장/로그아웃/삭제 3개 핵심 로직을 UX·로직·데이터 레이어로 그린 기술 지도(Mermaid `sequenceDiagram`·`graph TD`), 위험 구간 표시
+- [유저플로우 · 정보 위계(IA) · 데이터 구조(ERD)](https://claude.ai/code/artifact/8a7e9de0-96dc-4a20-a1f5-51b8f610b74f) — 기록하기·모아보기·마이 행동 흐름, Figma IA 대조 기반 정보 위계 트리, `STORED_RECORD`/`JOURNAL_ENTRY` 중심 ERD
+
 ## 원칙
 
 1. **하나의 질문에는 하나의 파일.** "뭐부터 하지"(PROGRESS_CHECKLIST) / "첫 론칭 결정이 뭐였지"(first-launch) / "토큰 어디서 오지"(DESIGN_TOKENS_RUNBOOK) — 세 질문이 서로 다르니 세 파일로 남긴다. 같은 질문에 대한 답이 두 파일에 걸쳐 있다면 그건 나눠진 게 아니라 **쪼개진 것**이니 합친다.
