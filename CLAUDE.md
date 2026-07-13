@@ -124,6 +124,8 @@ src/app/
 - **`X-Dev-Email` 헤더 인증을 프로덕션에 절대 사용하지 말 것** — JWT 교체 전까지 서버는 개발 전용
 - API 키(`OPENWEATHERMAP_API_KEY`, `KAKAO_REST_API_KEY`)는 `.env.local`에만 저장, 절대 커밋 금지
 - `NEXT_PUBLIC_` 환경변수에 시크릿 값 저장 금지 (브라우저에 노출됨)
+- **비밀번호는 Argon2/bcrypt 해시로만 저장 — 평문 저장 코드 절대 금지.** `AUTH`(JWT) 구현 시 최우선 준수 사항
+- **`JWT_SECRET`은 서버 `.env`에만 저장, `NEXT_PUBLIC_` 접두사 절대 금지** — 클라이언트에 노출되면 토큰 위조 가능
 
 ### 5-2. 데이터 무결성
 
