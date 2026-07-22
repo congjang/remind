@@ -380,6 +380,72 @@ describe("requireAuth 미들웨어 (보호 라우트 공통 — /v1/entries/quic
   });
 });
 
+describe("POST /v1/entries/quick (AUTH § 배포 시 하위호환 테스트 — 기존 로컬 큐 기록 재전송)", () => {
+  // src/app/lib/remindApi.ts의 syncPendingRecords()가 실제로 보내는 payload 형태를 그대로
+  // 재현한다: body/emotionTagIds/source/weather/clientMutationId. 로그인 UI가 아직 없어
+  // 실제 앱 화면으로는 이 흐름을 재현할 수 없지만(session.ts 주석 참고), 서버가 이 요청을
+  // 새 Bearer 인증으로도 정상 처리하는지는 로그인 UI와 무관하게 검증 가능하다.
+  let fake: ReturnType<typeof createFakePrisma>;
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeEach(async () => {
+    fake = createFakePrisma();
+    app = await buildApp({ prisma: fake.prisma });
+  });
+
+  async function getToken() {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/auth/signup",
+      payload: { email: "queued-record@example.com", password: "correct-horse-1" },
+    });
+    return res.json().accessToken as string;
+  }
+
+  it("인증 도입 전부터 로컬 큐에 쌓여있던 형태의 기록(날씨 스냅샷 포함)이 새 Bearer 인증으로도 정상 전송된다", async () => {
+    const token = await getToken();
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/entries/quick",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      payload: {
+        body: "인증 도입 전에 오프라인으로 써둔 기록",
+        emotionTagIds: ["emotion:calm"],
+        source: "app",
+        weather: { location: "서울", temp: "18°", extra: "맑음", icon: "sunny", weatherId: 800 },
+        clientMutationId: "local-queued-record-1",
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().entry.body).toBe("인증 도입 전에 오프라인으로 써둔 기록");
+  });
+
+  it("네트워크 재연결 시 syncPendingRecords가 같은 기록을 두 번 재시도해도(온라인 복귀 이벤트 중복 등) 중복 생성되지 않는다", async () => {
+    const token = await getToken();
+    const payload = {
+      body: "재시도로 두 번 전송될 수 있는 기록",
+      clientMutationId: "local-queued-record-2",
+    };
+
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/entries/quick",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      payload,
+    });
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/entries/quick",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      payload,
+    });
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    expect(second.json().entry.id).toBe(first.json().entry.id); // 새 기록이 아니라 같은 기록 반환
+  });
+});
+
 describe("DELETE /v1/entries/:id (soft delete)", () => {
   let fake: ReturnType<typeof createFakePrisma>;
   let app: Awaited<ReturnType<typeof buildApp>>;
