@@ -120,9 +120,12 @@ function createFakePrisma() {
     },
     journalEntry: {
       async create({ data }: { data: Partial<FakeEntry> & { userId: string; body: string } }) {
-        const now = new Date();
+        const id = nextId("entry");
+        // seq는 매 nextId() 호출마다 증가하므로, 실제 벽시계 해상도(ms)와 무관하게
+        // 생성 순서가 항상 엄격히 증가하는 createdAt을 보장한다(같은 ms에 여러 건 생성돼도 안전).
+        const now = new Date(Date.now() + seq);
         const entry: FakeEntry = {
-          id: nextId("entry"),
+          id,
           userId: data.userId,
           body: data.body,
           emotionTagIds: data.emotionTagIds ?? [],
@@ -150,6 +153,22 @@ function createFakePrisma() {
         if (!entry) throw new Error(`no entry ${where.id}`);
         Object.assign(entry, data, { updatedAt: new Date() });
         return entry;
+      },
+      async findMany({
+        where,
+        take,
+      }: {
+        where: { userId: string; deleted?: boolean };
+        orderBy?: { createdAt: "asc" | "desc" };
+        take?: number;
+      }) {
+        const results = [...entriesById.values()].filter(
+          (e) =>
+            e.userId === where.userId &&
+            (where.deleted === undefined || e.deleted === where.deleted),
+        );
+        results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        return take !== undefined ? results.slice(0, take) : results;
       },
     },
     reminderSpec: {
@@ -329,6 +348,111 @@ describe("POST /v1/reminders (SECURITY-HARDENING § schedule 스키마 강화)",
   });
 });
 
+describe("GET /v1/entries (SYNC-LIVE § 목록 조회)", () => {
+  let fake: ReturnType<typeof createFakePrisma>;
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeEach(async () => {
+    fake = createFakePrisma();
+    app = await buildApp({ prisma: fake.prisma });
+  });
+
+  async function signupAndGetToken(email: string) {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/auth/signup",
+      payload: { email, password: "correct-horse-1" },
+    });
+    return res.json().accessToken as string;
+  }
+
+  async function createEntry(token: string, body: string) {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/entries/quick",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      payload: { body },
+    });
+    return res.json().entry as { id: string };
+  }
+
+  it("인증 없이 호출하면 401", async () => {
+    const res = await app.inject({ method: "GET", url: "/v1/entries" });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("본인 소유의 삭제되지 않은 기록만 최신순으로 반환한다", async () => {
+    const token = await signupAndGetToken("list@example.com");
+    await createEntry(token, "첫 번째");
+    await createEntry(token, "두 번째");
+    const third = await createEntry(token, "세 번째(삭제 예정)");
+    await app.inject({
+      method: "DELETE",
+      url: `/v1/entries/${third.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/v1/entries",
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const bodies = res.json().entries.map((e: { body: string }) => e.body);
+    expect(bodies).toEqual(["두 번째", "첫 번째"]); // 최신순, 삭제된 건 제외
+  });
+
+  it("다른 사용자의 기록은 보이지 않는다", async () => {
+    const ownerToken = await signupAndGetToken("owner2@example.com");
+    const otherToken = await signupAndGetToken("other2@example.com");
+    await createEntry(ownerToken, "내 기록");
+    await createEntry(otherToken, "남의 기록");
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/v1/entries",
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+
+    expect(res.json().entries.map((e: { body: string }) => e.body)).toEqual(["내 기록"]);
+  });
+
+  it("기록이 500건을 넘으면 최신 500건까지만 반환한다(무제한 응답 방지 안전장치)", async () => {
+    const token = await signupAndGetToken("heavy-user@example.com");
+    const userId = JSON.parse(
+      Buffer.from(token.split(".")[1]!, "base64url").toString(),
+    ).sub as string;
+
+    // HTTP 550회 대신 fake Prisma의 저장소에 직접 시딩 — 순전히 응답 상한(take) 검증이 목적.
+    for (let i = 0; i < 550; i++) {
+      fake.entriesById.set(`bulk_${i}`, {
+        id: `bulk_${i}`,
+        userId,
+        body: `대량 기록 ${i}`,
+        emotionTagIds: [],
+        source: "app",
+        weather: null,
+        deleted: false,
+        clientMutationId: null,
+        createdAt: new Date(Date.now() + i), // i가 클수록 최신
+        updatedAt: new Date(),
+      });
+    }
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/v1/entries",
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const entries = res.json().entries as { body: string }[];
+    expect(entries).toHaveLength(500);
+    expect(entries[0]!.body).toBe("대량 기록 549"); // 가장 최신 것부터
+  });
+});
+
 describe("requireAuth 미들웨어 (보호 라우트 공통 — /v1/entries/quick으로 대표 검증)", () => {
   let fake: ReturnType<typeof createFakePrisma>;
   let app: Awaited<ReturnType<typeof buildApp>>;
@@ -443,6 +567,89 @@ describe("POST /v1/entries/quick (AUTH § 배포 시 하위호환 테스트 — 
     expect(first.statusCode).toBe(200);
     expect(second.statusCode).toBe(200);
     expect(second.json().entry.id).toBe(first.json().entry.id); // 새 기록이 아니라 같은 기록 반환
+  });
+});
+
+describe("POST /v1/entries/quick (SYNC-LIVE § 대량 업로드 멱등성 재사용 확인)", () => {
+  // 온보딩 시 로그인 전에 로컬에만 쌓아둔 기록을 한 번에 서버로 올리는 "대량 초기 업로드"
+  // 시나리오를 흉내낸다 — 단건 재시도용으로 만든 clientMutationId 멱등 처리가
+  // 여러 건을 순차로 올릴 때도, 그리고 배치 전체를 재시도할 때도 그대로 재사용되는지 확인.
+  let fake: ReturnType<typeof createFakePrisma>;
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeEach(async () => {
+    fake = createFakePrisma();
+    app = await buildApp({ prisma: fake.prisma });
+  });
+
+  async function getToken() {
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/auth/signup",
+      payload: { email: "bulk-upload@example.com", password: "correct-horse-1" },
+    });
+    return res.json().accessToken as string;
+  }
+
+  async function uploadBatch(token: string, records: { id: string; body: string }[]) {
+    const results = [];
+    for (const record of records) {
+      results.push(
+        await app.inject({
+          method: "POST",
+          url: "/v1/entries/quick",
+          headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+          payload: { body: record.body, clientMutationId: record.id },
+        }),
+      );
+    }
+    return results;
+  }
+
+  it("서로 다른 clientMutationId를 가진 여러 건을 순차 업로드하면 전부 개별 기록으로 생성된다", async () => {
+    const token = await getToken();
+    const batch = Array.from({ length: 20 }, (_, i) => ({
+      id: `onboard-${i}`,
+      body: `온보딩 업로드 기록 ${i}`,
+    }));
+
+    const results = await uploadBatch(token, batch);
+    expect(results.every((r) => r.statusCode === 200)).toBe(true);
+    const ids = new Set(results.map((r) => r.json().entry.id));
+    expect(ids.size).toBe(20); // 전부 서로 다른 기록
+
+    const listRes = await app.inject({
+      method: "GET",
+      url: "/v1/entries",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(listRes.json().entries).toHaveLength(20);
+  });
+
+  it("네트워크 문제로 배치 전체를 다시 업로드해도(같은 clientMutationId 재사용) 중복 생성되지 않는다", async () => {
+    const token = await getToken();
+    const batch = Array.from({ length: 10 }, (_, i) => ({
+      id: `onboard-retry-${i}`,
+      body: `재시도 배치 기록 ${i}`,
+    }));
+
+    const first = await uploadBatch(token, batch);
+    expect(first.every((r) => r.statusCode === 200)).toBe(true);
+
+    // 온보딩 업로드 도중 연결이 끊겨 클라이언트가 배치 전체를 처음부터 다시 보내는 상황 재현
+    const retry = await uploadBatch(token, batch);
+    expect(retry.every((r) => r.statusCode === 200)).toBe(true);
+
+    for (let i = 0; i < batch.length; i++) {
+      expect(retry[i].json().entry.id).toBe(first[i].json().entry.id);
+    }
+
+    const listRes = await app.inject({
+      method: "GET",
+      url: "/v1/entries",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(listRes.json().entries).toHaveLength(10); // 20건이 아니라 10건 — 재전송이 중복을 만들지 않음
   });
 });
 

@@ -442,6 +442,20 @@ export async function buildApp(deps?: {
     },
   );
 
+  // 목록 조회 — SYNC-LIVE § GET /v1/entries. 생성·삭제는 있는데 조회가 없어서
+  // 모아보기가 로컬 데이터만 볼 수 있었던 근본 원인. deleted:false만 반환,
+  // 최신순 정렬(recordsStore.ts의 로컬 정렬과 동일). ?since= 커서 기반 페이징은 별도 항목으로
+  // 의도적으로 보류 중(검증 안 된 미래 최적화) — take 상한만 걸어 무제한 응답만 방지한다.
+  const MAX_ENTRIES_PER_LIST = 500;
+  app.get("/v1/entries", { preHandler: requireAuth }, async (req) => {
+    const entries = await prisma.journalEntry.findMany({
+      where: { userId: req.userId, deleted: false },
+      orderBy: { createdAt: "desc" },
+      take: MAX_ENTRIES_PER_LIST,
+    });
+    return { entries };
+  });
+
   // 소프트 삭제 — JournalEntry.deleted만 true로 세팅, body는 절대 건드리지 않음(append-only 유지).
   // 존재하지 않거나 다른 사용자 소유면 존재 여부를 흘리지 않기 위해 동일하게 404.
   // 이미 삭제된 기록을 다시 호출해도 에러 없이 그대로 반환(재시도에도 안전한 멱등 처리).
