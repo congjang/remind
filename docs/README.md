@@ -41,9 +41,10 @@ docs/
 
 md가 아니라 Claude Code 아티팩트로만 존재하는 시각 자료입니다 — md처럼 git으로 버전 관리되지 않고, 재요청 시 최신 상태로 다시 그려집니다. 관련 md가 바뀌면 이 링크들도 갱신 대상입니다.
 
-- [PM 마스터 체크리스트](https://claude.ai/code/artifact/90835380-3597-45fb-9e97-36e796a9699d) — `PROGRESS_CHECKLIST.md` 부록 C·D를 시각화 + QA 시나리오 태그·검증 가이드·자동화 우선순위(단계·심각도)
+- [PM 마스터 체크리스트](https://claude.ai/code/artifact/90835380-3597-45fb-9e97-36e796a9699d) — `PROGRESS_CHECKLIST.md` 부록 C·D를 시각화 + QA 시나리오 태그·검증 가이드·자동화 우선순위(단계·심각도) + 서비스 정책 타임라인(핵심 정책·결정 과정) + 프로덕트 구현 프로세스 플로우(현재 위치 표시)
 - [통합 프로덕트 플로우차트](https://claude.ai/code/artifact/c9440ba9-dfef-45ef-bcce-f72d78eb32f7) — 저장/로그아웃/삭제 3개 핵심 로직을 UX·로직·데이터 레이어로 그린 기술 지도(Mermaid `sequenceDiagram`·`graph TD`), 위험 구간 표시
 - [유저플로우 · 정보 위계(IA) · 데이터 구조(ERD)](https://claude.ai/code/artifact/8a7e9de0-96dc-4a20-a1f5-51b8f610b74f) — 기록하기·모아보기·마이 행동 흐름, Figma IA 대조 기반 정보 위계 트리, `STORED_RECORD`/`JOURNAL_ENTRY` 중심 ERD
+- [이용약관](https://claude.ai/code/artifact/f73a98db-af7d-485f-a0ba-6dc0461e62d0) · [개인정보처리방침](https://claude.ai/code/artifact/fc87268b-7ee7-4e85-9c86-30a4c7e09c20) — **법률 검토 전 초안**. 일반 조항 + REMIND 특화 조항(기록 불변성·로컬 저장·위치정보 미저장 등). `[대괄호]` 플레이스홀더(운영자 정보 등)는 실제 값으로 교체 필요
 
 ## 원칙
 

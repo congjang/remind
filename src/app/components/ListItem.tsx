@@ -162,6 +162,12 @@ export function ListItem({
         <p className={labelClasses}>{label}</p>
       )}
 
+      {/* Checkbox/Radio/ToggleSwitch는 각각 실제 <input>/<button role="switch">를 렌더하는
+          진짜 포커스 가능한 컨트롤이다 — 옆의 <p>{label}</p>는 시각적 라벨일 뿐 <label for>
+          로 연결돼 있지 않으므로, 컨트롤 자체에 aria-label={label}로 접근 가능한 이름을
+          줘야 한다. 예전엔 라벨이 없다고 컨트롤을 aria-hidden으로 숨겼는데, 이러면 포커스는
+          여전히 가능한데 스크린리더에는 announce가 안 되는 상태가 된다(WCAG 4.1.2 위반 —
+          포커스 가능한 요소를 aria-hidden 처리하면 안 됨). */}
       {variant === "labelCheck" && (
         <div
           className="shrink-0"
@@ -171,7 +177,7 @@ export function ListItem({
           <Checkbox
             checked={checked}
             onChange={(e) => onCheckChange?.(e.target.checked)}
-            aria-hidden
+            aria-label={label}
           />
         </div>
       )}
@@ -185,7 +191,7 @@ export function ListItem({
             name={radioName}
             checked={selected}
             onChange={() => onRadioSelect?.()}
-            aria-hidden
+            aria-label={label}
           />
         </div>
       )}
@@ -199,7 +205,7 @@ export function ListItem({
             size="M"
             checked={checked}
             onChange={(next) => onSwitchChange?.(next)}
-            aria-hidden
+            aria-label={label}
           />
         </div>
       )}

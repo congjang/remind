@@ -46,13 +46,15 @@ export type AiArtifact = {
   createdAt: string;
 };
 
+/** Cron-like or JSON schedule — server validates (직렬화 2000자 이하). 필드 구조는 리마인더 설정 UI가 붙을 때 확정. */
+export type ReminderSchedule = Record<string, unknown>;
+
 export type ReminderSpec = {
   id: string;
   userId: string;
   /** IANA tz, e.g. Asia/Seoul */
   timeZone: string;
-  /** Cron-like or JSON schedule — server validates */
-  schedule: Record<string, unknown>;
+  schedule: ReminderSchedule;
   active: boolean;
   createdAt: string;
   updatedAt: string;

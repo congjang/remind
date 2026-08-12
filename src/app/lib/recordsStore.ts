@@ -159,12 +159,20 @@ function readRaw(): StoredRecord[] {
   }
 }
 
-function writeRaw(records: StoredRecord[]) {
-  if (!isBrowser()) return;
+/**
+ * localStorage 쓰기 시도. quota 초과·Safari 프라이빗 모드 등에서 예외가 나면
+ * false를 반환한다 — 예전엔 여기서 그냥 삼켜서 호출부가 "저장된 줄" 알았지만,
+ * 실제로는 새로고침하면 그 기록이 사라지는 무통보 유실이었다(SYNC-SAFETY).
+ * 호출부(saveRecord)가 이 반환값을 보고 사용자에게 실패를 알릴 수 있게 한다.
+ */
+function writeRaw(records: StoredRecord[]): boolean {
+  if (!isBrowser()) return true;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  } catch {
-    // localStorage may be unavailable (private mode, quota exceeded, etc)
+    return true;
+  } catch (e) {
+    console.warn("[recordsStore] localStorage 쓰기 실패 — 저장 공간이 가득 찼거나 프라이빗 모드일 수 있습니다", e);
+    return false;
   }
 }
 
@@ -173,6 +181,14 @@ let memoryCache: StoredRecord[] | null = null;
 /** 다음 getRecords()가 localStorage를 다시 읽도록 함(피드 새로고침 등). */
 export function invalidateRecordsCache() {
   memoryCache = null;
+}
+
+if (isBrowser()) {
+  // 다른 탭이 STORAGE_KEY를 쓰면 이 탭의 메모리 캐시가 그 즉시 낡은 상태가 된다 —
+  // 다음 getRecords() 호출이 반드시 localStorage를 다시 읽도록 무효화한다.
+  window.addEventListener("storage", (e) => {
+    if (e.key === STORAGE_KEY) invalidateRecordsCache();
+  });
 }
 
 export function getRecords(): StoredRecord[] {
@@ -184,13 +200,32 @@ export function getRecords(): StoredRecord[] {
   return memoryCache;
 }
 
-export function saveRecord(params: {
+/**
+ * 읽기(현재 상태 확인) → 병합 → 쓰기를 탭 간에 원자적으로 실행한다.
+ * localStorage는 탭마다 별도 JS 스레드에서 동작해 "읽고 쓰는 사이"에 다른 탭이 끼어들면
+ * 배열 전체를 덮어쓰는 writeRaw() 특성상 그 탭의 기록이 사라질 수 있다 — remindApi.ts의
+ * refresh token 탭 경합과 같은 클래스의 문제라 같은 해법(Web Locks API)을 재사용한다.
+ * 지원 안 하는 환경(구형 브라우저)에서는 락 없이 그대로 실행(기존 동작으로 폴백).
+ */
+async function withRecordsLock<T>(fn: () => T): Promise<T> {
+  if (isBrowser() && "locks" in navigator) {
+    return await navigator.locks.request("remind-records-write", () => fn());
+  }
+  return fn();
+}
+
+export type SaveRecordResult = StoredRecord & {
+  /** false면 이 기록이 실제로는 localStorage에 저장되지 못했다는 뜻 — 호출부가 사용자에게 알려야 함. */
+  persisted: boolean;
+};
+
+export async function saveRecord(params: {
   text: string;
   isTodo?: boolean;
   dueDate?: string | null;
   emotion?: string;
   weather?: StoredWeatherSnapshot | null;
-}): StoredRecord {
+}): Promise<SaveRecordResult> {
   const now = new Date();
   const record: StoredRecord = {
     id: `${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -203,14 +238,24 @@ export function saveRecord(params: {
     ...(params.weather ? { weather: params.weather } : {}),
   };
 
-  const current = getRecords();
-  const next = [record, ...current];
-  memoryCache = next;
-  writeRaw(next);
-  // 처음 저장 시 메타 버전 보장
-  writeMeta({ schemaVersion: CURRENT_SCHEMA_VERSION });
+  let persisted = true;
+  await withRecordsLock(() => {
+    // getRecords()의 메모리 캐시가 아니라 readRaw()로 락 안에서 최신 localStorage를 직접 읽는다.
+    const current = readRaw();
+    const next = [record, ...current];
+    memoryCache = next; // 낙관적 갱신 — 아래에서 실패하면 되돌린다.
+    persisted = writeRaw(next);
+    if (persisted) {
+      writeMeta({ schemaVersion: CURRENT_SCHEMA_VERSION });
+    } else {
+      // 쓰기가 실패했는데 memoryCache만 next로 남아있으면, 화면(예: "N개 쌓았어요")은
+      // 마치 저장된 것처럼 보이지만 새로고침하면 사라지는 유령 기록이 생긴다 — 실제로
+      // 저장에 성공한 상태(current)로 되돌려 getRecords()가 진실을 반환하게 한다.
+      memoryCache = current;
+    }
+  });
 
-  return record;
+  return { ...record, persisted };
 }
 
 /** 아직 서버 동기화에 성공하지 못한 레코드 목록 (재시도 대상). */
@@ -219,11 +264,13 @@ export function getUnsyncedRecords(): StoredRecord[] {
 }
 
 /** 서버 동기화 성공 시 호출 — 재시도 대상에서 제외. */
-export function markRecordSynced(id: string) {
-  const current = getRecords();
-  const next = current.map((r) => (r.id === id ? { ...r, synced: true } : r));
-  memoryCache = next;
-  writeRaw(next);
+export async function markRecordSynced(id: string): Promise<void> {
+  await withRecordsLock(() => {
+    const current = readRaw();
+    const next = current.map((r) => (r.id === id ? { ...r, synced: true } : r));
+    memoryCache = next;
+    writeRaw(next);
+  });
 }
 
 export function clearAllRecords() {
