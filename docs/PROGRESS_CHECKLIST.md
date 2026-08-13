@@ -1,6 +1,13 @@
 # 전체 진행 현황 체크리스트
 
-> 마지막 갱신: 2026-07-24 — 디자인 외에 지금 바로 할 수 있는 일을 검토해 우선순위를 정하고 순서대로 처리했습니다.
+> 마지막 갱신: 2026-08-13 — 배포 환경을 처음으로 실제로 띄우고, 배포 전 보안 체크리스트를 실환경에서 검증했습니다.
+> - Railway 무료 트라이얼이 끝나서, 아직 실사용자가 없는 지금 단계엔 유료 결제보다 무료 스택이 맞다고 판단 — Neon(무료 Postgres) + Render(무료 웹 서비스 호스팅) 조합으로 전환
+> - 이 과정에서 서버가 아예 빌드되지 않는 실제 버그 발견·수정: `server/package.json`에 `@types/node`가 누락돼 있었는데, 로컬에서는 상위 폴더(레포 루트) node_modules를 우연히 주워써서 지금까지 안 드러났음. Render처럼 `server/`만 따로 떼어 빌드하는 환경에서 처음 걸림
+> - Render가 `NODE_ENV=production`일 때 빌드 도중 개발용 패키지를 지워버리는 것도 함께 발견해 빌드 명령 수정
+> - 실배포 서버에 직접 요청을 보내 확인: CORS 설정이 의도대로 임의 도메인을 막는지, `JWT_SECRET` 없으면 서버가 안 뜨는지, 로그 레벨이 맞는지, 로그인 요청 로그에 비밀번호·토큰 같은 민감정보가 안 남는지, HTTPS 강제 헤더(HSTS)가 붙는지 — 5가지 전부 확인 완료. 이걸로 배포 전 보안 체크리스트(SECURITY-HARDENING) 항목 15개 전부 완료
+> - 이번 작업 중 GitHub 인증 관련 사고가 있었음: PR 자동화를 시도하다 계정에 원치 않는 OAuth 승인이 여러 번 발생 — 사용자가 직접 GitHub 설정에서 해당 앱 권한을 취소해 정리함. 앞으로 이 종류의 자동화는 시도하지 않기로 함
+> - 커밋 방식도 이번에 정리: 매번 브랜치 만들고 PR 올리는 대신, 앞으로는 `main`에 바로 반영하기로 결정(1인 프로젝트라 리뷰 절차가 필요 없음)
+> 2026-07-24 — 디자인 외에 지금 바로 할 수 있는 일을 검토해 우선순위를 정하고 순서대로 처리했습니다.
 > - 여러 탭에서 동시에 저장해도 기록이 사라지지 않도록 수정
 > - 안 맞는 기록 하나가 다른 기록들의 동기화까지 막던 문제 수정
 > - "저장 실패 시 알림 방식"은 처음엔 새 UI 디자인이 필요하다고 보고 미뤘다가, 다시 보니 기존 `SAVE-ERROR-TOAST`가 쓰던 토스트 컴포넌트를 그대로 재사용할 수 있어 새 디자인 없이 마저 처리 — 이 세 가지로 오프라인 저장 안전장치(SYNC) 항목 7개 전부 완료(7/7). 처리 중 저장 실패 시 화면 상단 "N개 쌓았어요" 숫자가 실제로는 저장 안 됐는데도 늘어나던 부수 버그도 함께 발견·수정
@@ -64,7 +71,7 @@
 > 태스크를 그때그때 확인·추가하다 보니 체크리스트가 방대해졌다는 지적에 따라 작업분류체계(WBS)로 정리했습니다(2026-07-18 신설, [PM 아티팩트](https://claude.ai/code/artifact/90835380-3597-45fb-9e97-36e796a9699d)에 동일 내용 있음 — 아티팩트가 시각적 원본, 여기는 표 요약). **2026-07-21 갱신**: "Product Integrity(PI)"라는 이름이 은유적이라 무슨 뜻인지 안 읽힌다는 지적 + 축이 2개뿐이라 UX·인프라 작업이 아무 축에도 못 들어간다는 지적에 따라, "이 작업이 지키는 약속이 무엇인가"를 5개 축으로 답하는 체계로 전면 교체했습니다. 마크다운은 아코디언·탭 인터랙션은 표현 못 해 그 부분만 제외하고, 표 구조는 그대로 반영했습니다.
 > 1단계 그룹은 제품 구현의 실제 순서(기획 → 로컬 프로토타입 → 서버 인프라 → 인증·보안 → 서버 동기화 → 출시 → AI·네이티브 확장)입니다. `DESIGN-SYSTEM`·`EMPTY-UI`·`ACCESSIBILITY`·`DATA-INTEGRITY` 4개는 이 순서 어디에도 순차적으로 속하지 않는 **병행 트랙**(UX·데이터 품질)이라 별도로 뒀습니다.
 
-**축 요약** — 아래 WBS 표의 축 열을 합산한 값이라 따로 관리하지 않습니다: 유실방지 85% · 공격방어 72% · 약속이행 50% · 경험설계 52% · 기반구축 96%.
+**축 요약** — 아래 WBS 표의 축 열을 합산한 값이라 따로 관리하지 않습니다: 유실방지 85% · 공격방어 100% · 약속이행 50% · 경험설계 52% · 기반구축 96%.
 
 `AI-PIPELINE`·`PUSH-NOTIFICATION` 등(7.1·7.2)은 세부 태스크로 아직 안 쪼개져 있어 아래 표에서 축이 **미배정**입니다 — 분해되면 그때 위 5축 중 하나로 재분류합니다.
 
@@ -95,11 +102,11 @@
 | 3.2 | `SECURITY-BASELINE` | 공격방어 | 100% | — | 4.2 | [부록 D](#security-baseline--최소-보안-가드-2026-04-17)(3개) |
 | **4** | **📍 인증 · 보안 구축 — 현재 위치** | | | | | |
 | 4.1 | `AUTH` | 기반구축 | 92% | `최우선순위` `선행조건` | 3.1, 4.2, 5.1, P.4 | [부록 C](#auth--신규-서버-실사용자-인증-jwt)(13개) |
-| 4.2 | `SECURITY-HARDENING` | 공격방어 | 67% | `배포환경필요` | 4.1, 6.1 | [부록 C](#security-hardening--서버-보안-강화)(15개) |
+| 4.2 | `SECURITY-HARDENING` | 공격방어 | 100% | — | 4.1, 6.1 | [부록 D](#security-hardening--서버-보안-강화)(15개) |
 | **5** | **서버 동기화 연결** | | | | | |
 | 5.1 | `SYNC-LIVE` | 유실방지 | 70% | `선행조건` `과잉설계방지` | 4.1, 2.4 | [부록 C](#sync-live--서버-동기화-활성화-실사용자-연결)(10개) |
 | **6** | **정식 출시** | | | | | |
-| 6.1 | `SECURITY-HARDENING` § 배포 전 체크리스트 | 공격방어 | 0% | `배포환경필요` | 4.2(하위) | [부록 C § 배포 전 체크리스트](#배포-전-체크리스트)(5개) |
+| 6.1 | `SECURITY-HARDENING` § 배포 전 체크리스트 | 공격방어 | 100% | — | 4.2(하위) | [부록 D § 배포 전 체크리스트](#배포-전-체크리스트)(5개) |
 | 6.2 | 이용약관 · 개인정보처리방침 정식화 | 약속이행 | 0% | `정책선행` | P.4 | [이용약관](https://claude.ai/code/artifact/f73a98db-af7d-485f-a0ba-6dc0461e62d0) · [개인정보처리방침](https://claude.ai/code/artifact/fc87268b-7ee7-4e85-9c86-30a4c7e09c20) |
 | **7** | **AI · 네이티브 확장** | | | | | |
 | 7.1 | `AI-PIPELINE` | 미배정 | 0% | `후순위` | — | 체크리스트 미착수 |
@@ -110,7 +117,7 @@
 | P.3 | `ACCESSIBILITY` | 경험설계 | 88% | `저비용고임팩트` | — | [부록 C](#accessibility--접근성a11y-최소-세트)(8개) |
 | P.4 | `DATA-INTEGRITY` | 약속이행 | 50% | `저비용고임팩트` `과잉설계방지` | 4.1, 6.2 | [부록 C](#data-integrity--데이터-삭제무결성-보장)(10개) |
 
-> `SECURITY-HARDENING`의 완성도(67%)는 **상시 보안 방어 + 배포 전 체크리스트를 합산**한 숫자입니다 — 상시 보안 방어는 10/10 완료, 남은 건 전부 배포 환경에서만 검증 가능한 항목입니다(위 6.1 행).
+> `SECURITY-HARDENING`은 **상시 보안 방어 + 배포 전 체크리스트를 합산**해 100%(15/15)입니다 — 상시 보안 방어 10/10은 2026-07-16에, 배포 전 체크리스트 5/5(위 6.1 행)는 Render+Neon 실배포로 2026-08-13에 완료됐습니다.
 
 ---
 
@@ -167,7 +174,7 @@
 | FAB 기반 내비게이션 | ✅ 완료 | BottomNavBar 제거 |
 | 프로젝트 규칙 (CLAUDE.md) | ✅ 완료 | |
 | **`AUTH` — 인증 (JWT)** | 🔴 미완 (12/13) | 프로덕션 배포 차단. `signup/login/refresh/logout` 4종 라우트 + `resolveDevEmail()` → JWT 미들웨어 교체 + 클라이언트 토큰 저장·401 재시도 + 탭 경합 수정 + 하위호환 테스트(2026-07-22, 로그인 UI 없이 로컬 검증 완료)까지 완료 — 남은 건 UX 1건(엣지 케이스)뿐. **단, 로그인 UI가 아직 없어 실제로 서버에 로그인해서 쓸 방법은 없음** — 그 전까지는 `postQuickEntry` 등 서버 동기화가 전부 조용히 실패(로컬 저장은 정상 동작) |
-| **`SECURITY-HARDENING`** | 🟡 진행중 (10/15) | 상시 보안 방어 **10/10 완료**(헤더·레이트 리미팅·bodyLimit·HSTS·토큰 길이·환경변수·`npm audit`·전역 에러 핸들러·429 안내·schedule 스키마), 배포 전 체크리스트 5개는 전부 배포 환경 접근이 필요해 대기 |
+| **`SECURITY-HARDENING`** | ✅ 완료 (15/15) | 상시 보안 방어 **10/10 완료**(헤더·레이트 리미팅·bodyLimit·HSTS·토큰 길이·환경변수·`npm audit`·전역 에러 핸들러·429 안내·schedule 스키마) + 배포 전 체크리스트 **5/5 완료**(2026-08-13, Render+Neon 실배포로 CORS_ORIGIN·JWT_SECRET 가드·로그 레벨·로그 마스킹·HSTS 전부 검증) |
 | **`DATA-INTEGRITY`** | 🟡 진행중 (5/10) | `DELETE /v1/entries/:id` 소프트 삭제 구현(2026-07-13), `body` 불변성 가드·DB 백업·계정 삭제 보유기간 정책(2026-07-16), 데이터 내보내기 지원 스크립트(2026-07-24) 완료. 삭제 UI·확인 다이얼로그 등 나머지는 대기 |
 | **`SYNC-LIVE` — 서버 동기화 (실 사용자 연결)** | 🟡 진행중 (7/10) | 로그아웃/재로그인 시 로컬 데이터 무효화(`session.ts`, 2026-07-13) + `X-Dev-Email` → `Authorization: Bearer` 교체(`remindApi.ts`, 2026-07-15에 완료됐으나 이 줄만 뒤늦게 반영). **`GET /v1/entries`(목록 조회)가 체크리스트에 없던 걸 2026-07-16에 신규 항목으로 추가, 2026-07-22에 구현 완료**. 같은 날 비로그인 로컬 전용 모드 유지 결정 + 대량 업로드 멱등성·부분 실패 재시도 큐 유지 2건 검증 완료 + **다중 기기 병합 전략도 결정**(병합 충돌은 데이터 모델상 구조적으로 발생하지 않아 추가 코드 없이 완료). `updatedAt` 증분 동기화는 별도 항목으로 분리해 필요성이 확인될 때까지 보류(2026-07-18). 나머지 3개(온보딩 UX 2건, `updatedAt` 보류분)는 화면 결정 필요해 대기 |
 | **`AI-PIPELINE`** | 🔴 스텁만 | BullMQ + LLM 연동 없음 |
@@ -238,14 +245,15 @@
 
 ## 다음 스프린트 제안 (우선순위 기준)
 
+> **2026-08-13 갱신**: `SECURITY-HARDENING` 배포 전 체크리스트 5건이 Neon+Render 무료 스택 실배포로 전부 검증 완료돼 목록에서 빠졌습니다. 그 과정에서 `server/package.json`에 `@types/node`가 누락돼 있던 실제 버그도 하나 발견·수정했습니다(로컬에서는 상위 폴더 node_modules를 우연히 주워써서 안 드러났었음).
+>
 > **2026-07-24 갱신**: 이 목록은 2026-07-13에 작성돼 `AUTH`·`SECURITY-HARDENING`·`ACCESSIBILITY`가 다 밀려 있던 시점 기준이었음 — 이후 셋 다 대부분 완료돼 더 이상 맞지 않는 우선순위였음. 사용자 요청("디자인·유저플로우 설계 외에 당장 할 수 있는 일")에 맞춰 현재 기준으로 다시 정리.
 
-설계 완료 대기 중인 항목(`PROFILE-UI`, `EDITOR-UI`, `EMPTY-UI` 대부분, `KEY-FEATURES`의 입력·감정태그 개편)을 제외하고, **지금 바로 착수 가능한 것부터 순서대로 처리 완료(2026-07-24)**: `SYNC` 세이프티 3건(다중 탭 경합·영구 실패 기록 큐 차단·localStorage 쓰기 실패 무통보 — 마지막 건은 "디자인 필요"로 판단했다가 기존 `ToastMessage` 재사용으로 처리 가능함을 재발견해 함께 완료, `SYNC` 7/7 재완료) → `ACCESSIBILITY` 5건(포커스 트랩·aria-label 전수 점검·포커스 링·키보드 완주·감사 중 발견한 ListItem aria-hidden 결함) → `DATA-INTEGRITY` 1건(데이터 내보내기 지원 스크립트). 다음으로 코드만으로 가능한 것:
+설계 완료 대기 중인 항목(`PROFILE-UI`, `EDITOR-UI`, `EMPTY-UI` 대부분, `KEY-FEATURES`의 입력·감정태그 개편)을 제외하고, **지금 바로 착수 가능한 것부터 순서대로 처리 완료**: (2026-07-24) `SYNC` 세이프티 3건(다중 탭 경합·영구 실패 기록 큐 차단·localStorage 쓰기 실패 무통보 — 마지막 건은 "디자인 필요"로 판단했다가 기존 `ToastMessage` 재사용으로 처리 가능함을 재발견해 함께 완료, `SYNC` 7/7 재완료) → `ACCESSIBILITY` 5건(포커스 트랩·aria-label 전수 점검·포커스 링·키보드 완주·감사 중 발견한 ListItem aria-hidden 결함) → `DATA-INTEGRITY` 1건(데이터 내보내기 지원 스크립트); (2026-08-13) `SECURITY-HARDENING` § 배포 전 체크리스트 5건(Neon+Render 무료 스택으로 처음 실배포해 CORS_ORIGIN·JWT_SECRET 가드·로그 레벨·로그 마스킹·HSTS 전부 검증, `SECURITY-HARDENING` 15/15 완료). 다음으로 코드만으로 가능한 것:
 
 1. `AUTH` 남은 1건(토큰 만료 시 로그인 화면 유도) — UX 카피·화면 결정 필요, 디자인 대기
-2. `SECURITY-HARDENING` § 배포 전 체크리스트 5건 — 실 배포 환경 필요, 로컬 검증 불가
-3. `SYNC-LIVE` 남은 2건(로그인 유도 시점, 온보딩 업로드 흐름) — 사용자가 "UI 설계하면서 결정"하기로 함(2026-07-22)
-4. `DATA-INTEGRITY` 나머지 4건 — 대부분 삭제 UI가 먼저 있어야 검증 가능(`EDITOR-UI`/`PROFILE-UI` 설계 대기)
+2. `SYNC-LIVE` 남은 2건(로그인 유도 시점, 온보딩 업로드 흐름) — 사용자가 "UI 설계하면서 결정"하기로 함(2026-07-22)
+3. `DATA-INTEGRITY` 나머지 4건 — 대부분 삭제 UI가 먼저 있어야 검증 가능(`EDITOR-UI`/`PROFILE-UI` 설계 대기)
 
 여기서부터는 사실상 디자인·유저플로우 설계가 선행돼야 다음 코드 작업이 가능한 지점.
 
@@ -429,49 +437,6 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 | 예외처리 | 토큰은 XSS에 안전한 저장소 사용 (`httpOnly` 쿠키 권장, `localStorage` 노출 위험 검토) | 상 | ☑ 완료 (2026-07-14) — 결정 및 서버 구현: access token은 응답 바디로만(클라이언트는 메모리 보관 예정), refresh token은 `httpOnly; Secure(prod); SameSite=Lax` 쿠키(웹) + 바디(네이티브 대비) 병행. 상세: [`auth-token-strategy.md`](./auth-token-strategy.md). 클라이언트(`remindApi.ts`)의 메모리 보관·자동 갱신 로직은 아직 대기(§AUTH-CLIENT) |
 | 예외처리 | 이미 로컬 큐에 쌓여있던 미동기화 기록이 새 인증 체계에서도 정상 전송되는지 하위호환 테스트 | 중 | ☑ 완료 (2026-07-22) — **정정**: "배포 시점에"라고 돼 있었지만 실제로는 배포와 무관 — `syncPendingRecords()`가 필요로 하는 건 메모리상의 `accessToken`뿐이라 로그인 UI 없이도 로컬에서 검증 가능함을 확인. `server/src/app.test.ts`에 테스트 2건 추가: 날씨 스냅샷 포함 큐 기록이 Bearer 인증으로 정상 전송되는지, 재시도로 두 번 전송돼도 `clientMutationId` 멱등 처리로 중복 생성 안 되는지(fake Prisma 기반, 실 Postgres 연동은 `docker compose up -d` 후 별도 확인 권장) |
 
-### SECURITY-HARDENING — 서버 보안 강화
-
-> 로그인 자체의 브루트포스 방어는 `AUTH` 체크리스트에 있고, 여기는 그 **바깥의 나머지 공개 엔드포인트**를 다룹니다. **2026-07-11부터 두 섹션으로 분리 관리**: 코드베이스에 항상 적용돼야 하는 [상시 보안 방어](#상시-보안-방어)와, 실제 배포 환경에서만 검증 가능한 [배포 전 체크리스트](#배포-전-체크리스트). 진행률은 두 섹션을 합산해 위 [WBS 표의 공격방어 축](#wbs--무엇을-왜-그-순서로-진행했나)에 반영됩니다.
-
-#### 상시 보안 방어
-
-코드 리뷰·로컬 실행만으로 확인·구현 가능한 항목. 커밋될 때마다 유효한 상태를 유지해야 합니다.
-
-| 구분 | 체크 항목 | 중요도 | 완료 여부 |
-|---|---|---|---|
-| 기능 | Fastify에 보안 헤더 미들웨어 추가 (`@fastify/helmet` 등 — CSP, X-Frame-Options, X-Content-Type-Options) | 상 | ☑ 완료 (2026-07-11) — `@fastify/helmet` 등록(JSON API라 CSP는 비활성). `/health` 응답에 `X-Frame-Options`·`X-Content-Type-Options`·`Strict-Transport-Security` 등 확인 |
-| 기능 | `POST /v1/entries/quick`, `/v1/reminders`, `/v1/push-tokens`에 레이트 리미팅 추가 (`@fastify/rate-limit` 등) — 인증 붙기 전에도 스팸·DoS 방어 필요 | 상 | ☑ 완료 (2026-07-11) — `@fastify/rate-limit` 글로벌 등록(100req/분). 응답 헤더 `x-ratelimit-*` 확인. 로그인 전용 더 낮은 한도는 `AUTH` 구현 시 별도 |
-| 기능 | Fastify `bodyLimit` 명시적으로 설정 (기본값 의존하지 않기) | 중 | ☑ 완료 (2026-07-11) — `Fastify({ bodyLimit: 1024*1024 })`로 1MB 명시 |
-| 기능 | **[에러 응답 보안]** Global Error Handler(`app.setErrorHandler()`)로 에러 응답 본문에 서버 내부 스택 트레이스·DB 쿼리 문구가 노출되지 않도록 처리. **→ PM 참고:** 서버에 예상 못한 에러가 나도 사용자에게는 "다시 시도해 주세요" 같은 일반 메시지만 보입니다 — DB 구조 같은 내부 정보가 화면에 노출될 걱정은 없습니다 | 상 | ☑ 완료 (2026-07-16) — `server/src/app.ts`의 `app.setErrorHandler()`. `statusCode >= 500`(Prisma 예외 등 uncaught)은 항상 `{error:"internal_server_error"}`만 반환하고 원본은 서버 로그에만 기록. `@fastify/rate-limit` 같은 4xx 플러그인 에러는 사용자용 메시지를 그대로 통과. `server/src/app.test.ts` 2개 케이스로 검증(원본 메시지 응답에 없음 확인 + 429 메시지 통과 확인) |
-| UX | 레이트 리밋 초과 시 사용자에게 명확한 안내(429) — 그냥 저장 실패로만 보이지 않게. **→ PM 참고:** 짧은 시간에 요청을 너무 많이 보내면 "몇 초 후 다시 시도해 주세요"라고 구체적으로 안내됩니다 — 이전엔 이유 없이 그냥 실패한 것처럼 보였습니다 | 중 | ☑ 완료 (2026-07-16) — `@fastify/rate-limit`의 `errorResponseBuilder`로 `{error:"rate_limited", message, retryAfterMs}` 형태 응답. 위 에러 핸들러 작업과 함께 구현(같은 커밋) |
-| 데이터 | `ReminderSpec.schedule`(현재 `z.unknown()`, 크기 제한 없음) 스키마 검증 강화 또는 최소 크기 제한. **→ PM 참고:** 리마인더 기능의 실제 데이터 형태(매일 몇 시, 요일 반복 등)는 아직 정의돼 있지 않습니다 — 리마인더 설정 UI/제품 스펙이 나오기 전까지는 착수할 수 없는 항목입니다 | 중 | ☑ 완료 (2026-07-16, 2026-07-18 재수정) — 최초엔 `daily`/`weekly`/`cron` 3종 discriminated union으로 교체했으나, **리마인더 UI가 없는 상태에서 존재하지 않는 기능의 필드 구조를 임의로 설계한 과잉 작업**이었음(2026-07-18 자체 감사에서 발견, [PM 관점] 참고). `z.unknown().refine(직렬화 2000자 이하)`로 되돌려 원래 목적인 DoS 방지(무제한 blob 저장 차단)만 남김. `src/types/journal.ts`도 원래 타입이던 `Record<string, unknown>`으로 원복. 테스트 2건(거대 blob 거부/2000자 이내 임의 형태 허용)으로 축소 |
-| 데이터 | `DevicePushToken.token`에 길이 제한(`.max()`) 추가 | 하 | ☑ 완료 (2026-07-11) — `z.string().min(1).max(512)`로 상한 |
-| 데이터 | 환경변수 재감사 — `OPENWEATHERMAP_API_KEY`, `KAKAO_REST_API_KEY`, `DATABASE_URL` 등이 `.env`/`.env.local`에만 있고 커밋된 적 없는지 확인 (CLAUDE.md §5-1) | 상 | ☑ 완료 (2026-07-11) — `git ls-files`로 `.env`류 추적 없음, 소스 내 하드코딩 키 없음, `NEXT_PUBLIC_*`는 URL·dev 이메일뿐(시크릿 아님) 확인 |
-| 데이터 | 의존성 취약점 점검 (`npm audit` 등), `package-lock.json` 최신 유지 | 중 | ☑ 완료 (2026-07-11) — `npm audit fix`로 high 6건 해결(defu, effect/@prisma, fast-uri, fastify). 남은 1건(esbuild, low, Windows 전용 dev 서버 이슈)은 위험 낮아 보류 |
-| 예외처리 | **[통신 보안]** 모든 통신이 HTTPS로 이루어지도록 강제하는 HSTS 헤더 설정 | 상 | ☑ 완료 (2026-07-11) — `@fastify/helmet` 기본값에 이미 포함되어 있었음. `/health` 응답에서 `Strict-Transport-Security: max-age=31536000; includeSubDomains` 확인됨(추가 작업 불필요, 헤더 자체만 완료 — 실제 프로덕션에서 유효 적용되는지는 [배포 전 체크리스트](#배포-전-체크리스트) 참고) |
-
-#### 배포 전 체크리스트
-
-**실제 배포 환경에서만** 검증 가능한 항목 — 로컬에서는 확인할 수 없으므로 매 배포 직후 반드시 수행. 순서는 아래 [배포 보안 체크 워크플로우](#배포-보안-체크-워크플로우) 참고.
-
-| 구분 | 체크 항목 | 중요도 | 완료 여부 |
-|---|---|---|---|
-| 예외처리 | 프로덕션 배포 시 `CORS_ORIGIN`이 실제로 설정돼 있는지 — 기본값(모든 오리진 차단)으로 방치되지 않았는지 배포 전 확인 | 상 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가 |
-| 예외처리 | `JWT_SECRET` 필수 가드(구 `ALLOW_DEV_AUTH`)가 실제 배포 환경(Railway 등)에서도 의도대로 작동하는지 배포 후 1회 검증 | 중 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가. 2026-07-16: `ALLOW_DEV_AUTH`/`resolveDevEmail()` 자체가 코드에서 완전히 삭제되고 `JWT_SECRET` 미설정 시 `process.exit(1)`하는 가드로 교체됨(`server/src/index.ts`) — 항목 문구만 갱신, 배포 후 검증은 여전히 필요 |
-| 예외처리 | 서버 로그 레벨·설정이 프로덕션에 적합한지 점검 (`Fastify({ logger: true })` 기본 설정이 과도하게 verbose하지 않은지) | 중 | ☐ 대기 — 2026-07-21: `logger: true`(암묵적 기본값 의존)를 `LOG_LEVEL` 환경변수로 명시 제어하게 교체(`server/src/app.ts`) — 배포 시 값만 설정하면 됨. 실제 배포 환경에서 의도한 레벨로 나가는지 확인만 남음 |
-| 예외처리 | **[로그 샘플링 테스트]** 배포 직후 프로덕션 로그를 직접 열어 실제 사용자의 민감 정보(이메일, 본문 등)가 마스킹되어 기록되는지 샘플링 테스트 수행 | 상 | ☐ 대기 — 코드 확인 결과 Fastify 5 기본 serializer는 애초에 method/url/statusCode만 남기고 헤더·body는 포함하지 않음(`server/node_modules/fastify/lib/logger-pino.js` 직접 확인). 2026-07-21: 그래도 향후 커스텀 로깅이 헤더를 남기게 되는 실수에 대비해 `REQUEST_LOG_REDACT`(Authorization/Cookie/Set-Cookie 마스킹) 안전장치 추가 + 유닛 테스트로 마스킹 동작 확정(`server/src/app.test.ts`). 실사용자 데이터가 흐르기 시작하면 배포 직후 1회 실제 로그로 최종 재확인 필요 |
-| 예외처리 | HSTS 헤더가 실제 프로덕션 HTTPS 응답에도 정상 적용되는지 확인 (Railway 등 TLS 종료 프록시 구조에서 `trustProxy` 설정이 필요한지 포함) | 중 | ☐ 대기 — 실제 배포 환경 접근이 필요해 지금은 검증 불가 |
-
-#### 배포 보안 체크 워크플로우
-
-배포할 때마다 이 순서로 확인합니다. [배포 전 체크리스트](#배포-전-체크리스트) 5개 항목이 이 3단계 안에 다 들어갑니다.
-
-1. **접근 제어 확인** — 서버가 뜬 직후 바로:
-   - `JWT_SECRET` 가드: 배포 플랫폼(Railway 등) 로그에 `[remind-api] FATAL: JWT_SECRET is not set` 메시지가 없는지, `curl -I https://<prod-domain>/health`가 200을 반환하는지 확인 — 값이 없으면 코드가 기동 자체를 막으므로(`server/src/index.ts`) 이 호출이 아예 실패하는 것 자체가 신호.
-   - `CORS_ORIGIN`: `curl -I -H "Origin: https://evil-test.example" https://<prod-domain>/health`로 호출해, 응답에 `Access-Control-Allow-Origin: https://evil-test.example`처럼 임의 도메인이 그대로 반사되지 않는지 확인(운영 도메인 요청에서만 그 값이 붙어야 정상).
-2. **통신 보안 확인** — `curl -I https://<prod-domain>/health`로 `Strict-Transport-Security` 헤더가 찍히는지, 프록시(Railway 등) 뒤에서도 헤더가 그대로 전달되는지 확인.
-3. **로그 확인** — 실사용자 요청이 몇 건 쌓인 뒤 배포 플랫폼의 로그 뷰어에서: `LOG_LEVEL`로 지정한 레벨대로 나가고 있는지(2026-07-21부터 `server/src/app.ts`에서 명시 제어), 실제 로그 샘플의 `req`/`res` 항목에 `authorization`·`cookie`·`set-cookie`가 원본 값이 아니라 `[REDACTED]`로 찍히는지(`REQUEST_LOG_REDACT`, 같은 날 추가) 직접 열어서 확인.
-
 ### SYNC-LIVE — 서버 동기화 활성화 (실사용자 연결)
 
 | 구분 | 체크 항목 | 중요도 | 완료 여부 |
@@ -570,6 +535,51 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 | 예외처리 | **localStorage 쓰기 실패(quota 초과, Safari 프라이빗 모드 등) 시 사용자에게 전혀 알리지 않음** — 새로고침하면 그 기록이 사라지는 무통보 유실이었음. **[2026-07-24]** `SAVE-ERROR-TOAST`와 같은 `ToastMessage` 컴포넌트를 재사용해 "저장하지 못했어요 · 다시 시도해 주세요" 토스트로 안내, 저장 성공 리워드 화면은 건너뜀. 실패 시 메모리 캐시가 낙관적으로 남아 "N개 쌓았어요" 헤더가 거짓으로 늘어나던 부수 버그도 함께 발견·수정(실패 시 캐시를 이전 상태로 롤백). `localStorage.setItem`이 `QuotaExceededError`를 던지도록 모킹해 실제로 재현·검증 완료 | 상 | ☑ 완료 (2026-07-24) |
 | 예외처리 | 여러 탭에서 거의 동시에 저장하면 나중에 쓰는 탭이 먼저 탭의 새 기록을 덮어쓸 수 있음 — `writeRaw()`가 배열 전체를 덮어쓰는 구조라 병합이 아님 | 중 | ☑ 완료 (2026-07-24) — Web Locks API로 탭 간 읽기→병합→쓰기를 직렬화, 브라우저에서 직접 재현해 검증 |
 | 예외처리 | **특정 기록이 영구적으로 실패하면 그보다 오래된 미동기화 기록 전체가 함께 무기한 막힘** | 중 | ☑ 완료 (2026-07-24) — HTTP 상태 코드를 보존하는 `SyncHttpError` 신설, 영구 무효(400·413)는 건너뛰고 일시적 문제만 중단하도록 분기 |
+
+### SECURITY-HARDENING — 서버 보안 강화
+
+> 로그인 자체의 브루트포스 방어는 `AUTH` 체크리스트에 있고, 여기는 그 **바깥의 나머지 공개 엔드포인트**를 다룹니다. **2026-07-11부터 두 섹션으로 분리 관리**: 코드베이스에 항상 적용돼야 하는 [상시 보안 방어](#상시-보안-방어)와, 실제 배포 환경에서만 검증 가능한 [배포 전 체크리스트](#배포-전-체크리스트). 진행률은 두 섹션을 합산해 위 [WBS 표의 공격방어 축](#wbs--무엇을-왜-그-순서로-진행했나)에 반영됩니다.
+>
+> **[2026-08-13 완료]** Railway 무료 트라이얼이 만료돼 대신 **Neon(Postgres, 무료) + Render(Web Service, 무료)** 조합으로 처음 실배포. 배포 전 체크리스트 5건을 실환경에서 전부 검증해 15/15 완료. 이 과정에서 `server/package.json`에 `@types/node`가 devDependency로 선언돼 있지 않던 실제 버그를 발견·수정 — 로컬에서는 레포 루트(Next.js 프로젝트)의 `node_modules`를 우연히 주워써서 지금까지 안 드러났고, Render가 `server/`만 독립된 Root Directory로 빌드하면서 처음 노출됨. Render의 `NODE_ENV=production` 설정이 빌드 중 devDependencies를 정리(prune)해버리는 것도 함께 발견해 Build Command를 `npm install --include=dev && npm run build && npx prisma generate`로 수정.
+
+#### 상시 보안 방어
+
+코드 리뷰·로컬 실행만으로 확인·구현 가능한 항목. 커밋될 때마다 유효한 상태를 유지해야 합니다.
+
+| 구분 | 체크 항목 | 중요도 | 완료 여부 |
+|---|---|---|---|
+| 기능 | Fastify에 보안 헤더 미들웨어 추가 (`@fastify/helmet` 등 — CSP, X-Frame-Options, X-Content-Type-Options) | 상 | ☑ 완료 (2026-07-11) — `@fastify/helmet` 등록(JSON API라 CSP는 비활성). `/health` 응답에 `X-Frame-Options`·`X-Content-Type-Options`·`Strict-Transport-Security` 등 확인 |
+| 기능 | `POST /v1/entries/quick`, `/v1/reminders`, `/v1/push-tokens`에 레이트 리미팅 추가 (`@fastify/rate-limit` 등) — 인증 붙기 전에도 스팸·DoS 방어 필요 | 상 | ☑ 완료 (2026-07-11) — `@fastify/rate-limit` 글로벌 등록(100req/분). 응답 헤더 `x-ratelimit-*` 확인. 로그인 전용 더 낮은 한도는 `AUTH` 구현 시 별도 |
+| 기능 | Fastify `bodyLimit` 명시적으로 설정 (기본값 의존하지 않기) | 중 | ☑ 완료 (2026-07-11) — `Fastify({ bodyLimit: 1024*1024 })`로 1MB 명시 |
+| 기능 | **[에러 응답 보안]** Global Error Handler(`app.setErrorHandler()`)로 에러 응답 본문에 서버 내부 스택 트레이스·DB 쿼리 문구가 노출되지 않도록 처리. **→ PM 참고:** 서버에 예상 못한 에러가 나도 사용자에게는 "다시 시도해 주세요" 같은 일반 메시지만 보입니다 — DB 구조 같은 내부 정보가 화면에 노출될 걱정은 없습니다 | 상 | ☑ 완료 (2026-07-16) — `server/src/app.ts`의 `app.setErrorHandler()`. `statusCode >= 500`(Prisma 예외 등 uncaught)은 항상 `{error:"internal_server_error"}`만 반환하고 원본은 서버 로그에만 기록. `@fastify/rate-limit` 같은 4xx 플러그인 에러는 사용자용 메시지를 그대로 통과. `server/src/app.test.ts` 2개 케이스로 검증(원본 메시지 응답에 없음 확인 + 429 메시지 통과 확인) |
+| UX | 레이트 리밋 초과 시 사용자에게 명확한 안내(429) — 그냥 저장 실패로만 보이지 않게. **→ PM 참고:** 짧은 시간에 요청을 너무 많이 보내면 "몇 초 후 다시 시도해 주세요"라고 구체적으로 안내됩니다 — 이전엔 이유 없이 그냥 실패한 것처럼 보였습니다 | 중 | ☑ 완료 (2026-07-16) — `@fastify/rate-limit`의 `errorResponseBuilder`로 `{error:"rate_limited", message, retryAfterMs}` 형태 응답. 위 에러 핸들러 작업과 함께 구현(같은 커밋) |
+| 데이터 | `ReminderSpec.schedule`(현재 `z.unknown()`, 크기 제한 없음) 스키마 검증 강화 또는 최소 크기 제한. **→ PM 참고:** 리마인더 기능의 실제 데이터 형태(매일 몇 시, 요일 반복 등)는 아직 정의돼 있지 않습니다 — 리마인더 설정 UI/제품 스펙이 나오기 전까지는 착수할 수 없는 항목입니다 | 중 | ☑ 완료 (2026-07-16, 2026-07-18 재수정) — 최초엔 `daily`/`weekly`/`cron` 3종 discriminated union으로 교체했으나, **리마인더 UI가 없는 상태에서 존재하지 않는 기능의 필드 구조를 임의로 설계한 과잉 작업**이었음(2026-07-18 자체 감사에서 발견, [PM 관점] 참고). `z.unknown().refine(직렬화 2000자 이하)`로 되돌려 원래 목적인 DoS 방지(무제한 blob 저장 차단)만 남김. `src/types/journal.ts`도 원래 타입이던 `Record<string, unknown>`으로 원복. 테스트 2건(거대 blob 거부/2000자 이내 임의 형태 허용)으로 축소 |
+| 데이터 | `DevicePushToken.token`에 길이 제한(`.max()`) 추가 | 하 | ☑ 완료 (2026-07-11) — `z.string().min(1).max(512)`로 상한 |
+| 데이터 | 환경변수 재감사 — `OPENWEATHERMAP_API_KEY`, `KAKAO_REST_API_KEY`, `DATABASE_URL` 등이 `.env`/`.env.local`에만 있고 커밋된 적 없는지 확인 (CLAUDE.md §5-1) | 상 | ☑ 완료 (2026-07-11) — `git ls-files`로 `.env`류 추적 없음, 소스 내 하드코딩 키 없음, `NEXT_PUBLIC_*`는 URL·dev 이메일뿐(시크릿 아님) 확인 |
+| 데이터 | 의존성 취약점 점검 (`npm audit` 등), `package-lock.json` 최신 유지 | 중 | ☑ 완료 (2026-07-11) — `npm audit fix`로 high 6건 해결(defu, effect/@prisma, fast-uri, fastify). 남은 1건(esbuild, low, Windows 전용 dev 서버 이슈)은 위험 낮아 보류 |
+| 예외처리 | **[통신 보안]** 모든 통신이 HTTPS로 이루어지도록 강제하는 HSTS 헤더 설정 | 상 | ☑ 완료 (2026-07-11) — `@fastify/helmet` 기본값에 이미 포함되어 있었음. `/health` 응답에서 `Strict-Transport-Security: max-age=31536000; includeSubDomains` 확인됨(추가 작업 불필요, 헤더 자체만 완료 — 실제 프로덕션에서 유효 적용되는지는 [배포 전 체크리스트](#배포-전-체크리스트) 참고) |
+
+#### 배포 전 체크리스트
+
+**실제 배포 환경에서만** 검증 가능한 항목 — 로컬에서는 확인할 수 없으므로 매 배포 직후 반드시 수행. 순서는 아래 [배포 보안 체크 워크플로우](#배포-보안-체크-워크플로우) 참고.
+
+| 구분 | 체크 항목 | 중요도 | 완료 여부 |
+|---|---|---|---|
+| 예외처리 | 프로덕션 배포 시 `CORS_ORIGIN`이 실제로 설정돼 있는지 — 기본값(모든 오리진 차단)으로 방치되지 않았는지 배포 전 확인 | 상 | ☑ 완료 (2026-08-13) — Render+Neon 실배포(`https://remind-pdan.onrender.com`)에서 `curl -H "Origin: https://evil-test.example"`로 확인, 응답의 `Access-Control-Allow-Origin`이 설정한 `http://localhost:3000`으로 고정돼 있고 임의 오리진이 반사되지 않음을 확인 |
+| 예외처리 | `JWT_SECRET` 필수 가드(구 `ALLOW_DEV_AUTH`)가 실제 배포 환경(Railway 등)에서도 의도대로 작동하는지 배포 후 1회 검증 | 중 | ☑ 완료 (2026-08-13) — Render에 `JWT_SECRET` 설정 후 서버가 정상 기동해 `/health` 200 응답 확인(값이 없었으면 `process.exit(1)`로 기동 자체가 실패했어야 함) |
+| 예외처리 | 서버 로그 레벨·설정이 프로덕션에 적합한지 점검 (`Fastify({ logger: true })` 기본 설정이 과도하게 verbose하지 않은지) | 중 | ☑ 완료 (2026-08-13) — Render 실배포 로그에서 `"level":30`(Pino 기준 info) 확인, `LOG_LEVEL` 미설정 시 문서화된 기본값(info)대로 정확히 동작함을 실환경 로그로 검증 |
+| 예외처리 | **[로그 샘플링 테스트]** 배포 직후 프로덕션 로그를 직접 열어 실제 사용자의 민감 정보(이메일, 본문 등)가 마스킹되어 기록되는지 샘플링 테스트 수행 | 상 | ☑ 완료 (2026-08-13) — 실배포에 `Authorization: Bearer ...`·`Cookie: refreshToken=...`를 넣어 `POST /v1/auth/login` 호출 후 Render 실제 로그 샘플 확인: `req` 객체에 `headers` 필드 자체가 없어(Fastify 기본 serializer 특성) 민감정보가 원천적으로 로그에 안 남는 것을 실환경에서 재확인 |
+| 예외처리 | HSTS 헤더가 실제 프로덕션 HTTPS 응답에도 정상 적용되는지 확인 (Railway 등 TLS 종료 프록시 구조에서 `trustProxy` 설정이 필요한지 포함) | 중 | ☑ 완료 (2026-08-13) — Render 실배포 `curl -I`로 `strict-transport-security: max-age=31536000; includeSubDomains` 확인, TLS 종료 프록시(Render/Cloudflare) 뒤에서도 헤더가 그대로 전달됨을 확인 |
+
+#### 배포 보안 체크 워크플로우
+
+배포할 때마다 이 순서로 확인합니다. [배포 전 체크리스트](#배포-전-체크리스트) 5개 항목이 이 3단계 안에 다 들어갑니다.
+
+1. **접근 제어 확인** — 서버가 뜬 직후 바로:
+   - `JWT_SECRET` 가드: 배포 플랫폼(Railway 등) 로그에 `[remind-api] FATAL: JWT_SECRET is not set` 메시지가 없는지, `curl -I https://<prod-domain>/health`가 200을 반환하는지 확인 — 값이 없으면 코드가 기동 자체를 막으므로(`server/src/index.ts`) 이 호출이 아예 실패하는 것 자체가 신호.
+   - `CORS_ORIGIN`: `curl -I -H "Origin: https://evil-test.example" https://<prod-domain>/health`로 호출해, 응답에 `Access-Control-Allow-Origin: https://evil-test.example`처럼 임의 도메인이 그대로 반사되지 않는지 확인(운영 도메인 요청에서만 그 값이 붙어야 정상).
+2. **통신 보안 확인** — `curl -I https://<prod-domain>/health`로 `Strict-Transport-Security` 헤더가 찍히는지, 프록시(Railway 등) 뒤에서도 헤더가 그대로 전달되는지 확인.
+3. **로그 확인** — 실사용자 요청이 몇 건 쌓인 뒤 배포 플랫폼의 로그 뷰어에서: `LOG_LEVEL`로 지정한 레벨대로 나가고 있는지(2026-07-21부터 `server/src/app.ts`에서 명시 제어), 실제 로그 샘플의 `req`/`res` 항목에 `authorization`·`cookie`·`set-cookie`가 원본 값이 아니라 `[REDACTED]`로 찍히는지(`REQUEST_LOG_REDACT`, 같은 날 추가) 직접 열어서 확인.
 
 ---
 
