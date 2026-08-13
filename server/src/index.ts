@@ -1,16 +1,11 @@
 import { buildApp } from "./app.js";
 
-// ─── 프로덕션 안전 가드 ────────────────────────────────────────────────────
-// DEV AUTH는 개발 환경 전용입니다.
-// NODE_ENV=production 에서는 반드시 ALLOW_DEV_AUTH=true 를 명시해야만 서버가 뜹니다.
-// (실수로 프로덕션 배포 시 즉시 crash-out)
-if (
-  process.env.NODE_ENV === "production" &&
-  process.env.ALLOW_DEV_AUTH !== "true"
-) {
+// ─── 시작 시 필수 환경변수 가드 ────────────────────────────────────────────
+// JWT_SECRET 없이는 로그인·인증 미들웨어 전부가 요청마다 500을 던지게 되므로,
+// 산발적인 런타임 에러 대신 기동 시점에 즉시 crash-out.
+if (!process.env.JWT_SECRET) {
   console.error(
-    "[remind-api] FATAL: X-Dev-Email auth is dev-only. " +
-    "Set ALLOW_DEV_AUTH=true only if you have replaced this with real JWT auth. " +
+    "[remind-api] FATAL: JWT_SECRET is not set — see server/.env.example. " +
     "Refusing to start."
   );
   process.exit(1);

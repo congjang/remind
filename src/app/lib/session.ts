@@ -1,13 +1,15 @@
 // 로그인 identity 추적 + 계정 전환/로그아웃 시 로컬 데이터 무효화 정책.
 //
-// AUTH(JWT) 도입 전까지는 `remind-dev-email`이 유일한 identity 소스다.
+// 서버 라우트는 JWT 인증으로 전환됐지만(remindApi.ts), 로그인 UI가 아직 없어
+// `remind-dev-email`이 여전히 클라이언트 로컬 전용 identity 소스다.
 // 이 모듈이 그 identity가 바뀌는 모든 경로(로그아웃, 다른 계정 재로그인)를
 // 감지해 로컬에 남은 기록을 지우는 단일 진입점 역할을 한다 — 공유 기기에서
 // 이전 계정의 기록이 새 계정 화면에 노출되는 것을 막기 위함.
-// AUTH 전환 이후에도 getCurrentIdentity()의 소스만 실제 세션 값으로 바꾸면
+// 로그인 UI 도입 이후에도 getCurrentIdentity()의 소스만 실제 세션 값으로 바꾸면
 // 무효화 정책(ensureIdentityConsistency/logout/loginAs)은 그대로 재사용 가능.
 
 import { clearAllRecords, invalidateRecordsCache } from "./recordsStore";
+import { setAccessToken } from "./remindApi";
 
 const DEV_EMAIL_KEY = "remind-dev-email";
 const LAST_IDENTITY_KEY = "remind-last-identity-v1";
@@ -17,7 +19,7 @@ function isBrowser() {
   return typeof window !== "undefined";
 }
 
-/** 현재 세션의 identity(이메일). remindApi.ts의 X-Dev-Email 헤더와 동일 소스를 공유한다. */
+/** 현재 세션의 identity(이메일). 로그인 UI 도입 전까지는 로컬 전용 값. */
 export function getCurrentIdentity(): string {
   const fromEnv = process.env.NEXT_PUBLIC_DEV_EMAIL?.trim();
   if (fromEnv) return fromEnv;
@@ -78,13 +80,14 @@ export function ensureIdentityConsistency(): void {
 }
 
 /**
- * 명시적 로그아웃 — 로컬 기록·identity 마커·dev-email 오버라이드를 모두 지운다.
- * 로그아웃 버튼 UI가 아직 없어도(AUTH 미구현), 로그아웃에 준하는 이벤트는
+ * 명시적 로그아웃 — 로컬 기록·identity 마커·dev-email 오버라이드·인증 토큰을 모두 지운다.
+ * 로그아웃 버튼 UI가 아직 없어도(로그인 UI 미구현), 로그아웃에 준하는 이벤트는
  * 항상 이 함수를 통해야 한다.
  */
 export function logout(): void {
   purgeLocalData();
   writeLastIdentity(null);
+  setAccessToken(null); // 메모리에 남아있을 수 있는 access token도 함께 무효화
   if (isBrowser()) {
     try {
       window.localStorage.removeItem(DEV_EMAIL_KEY);

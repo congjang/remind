@@ -60,6 +60,8 @@ export default function Home() {
   const [toastVisible, setToastVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  /** localStorage 쓰기 자체가 실패한 경우 — 서버 동기화 실패보다 심각(로컬에도 안 남음). */
+  const [localSaveFailed, setLocalSaveFailed] = useState(false);
   /** 로컬에 저장된 기록 개수 (`$` / `$+1` 치환용) */
   const [savedRecordCount, setSavedRecordCount] = useState(0);
   /** 페이지 진입 시 한 번 골라 유지하는 동기부여 문장 템플릿 인덱스 */
@@ -67,6 +69,7 @@ export default function Home() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const baseMirrorRef = useRef<HTMLDivElement>(null);
   const overlayMirrorRef = useRef<HTMLDivElement>(null);
   const toastTimeoutRef = useRef<number | null>(null);
@@ -94,13 +97,35 @@ export default function Home() {
     }
   }, [isEditing]);
 
-  // ESC 키로 편집 오버레이 닫기 + 트리거 텍스트 영역으로 포커스 복귀
+  // ESC 키로 편집 오버레이 닫기 + 트리거 텍스트 영역으로 포커스 복귀.
+  // 포커스 트랩: Tab이 오버레이 밖(예: 뒤에 깔린 홈 화면)으로 나가지 않도록 마지막/첫
+  // 포커스 가능 요소에서 순환시킨다. 하단 iOS 키보드 목업은 inert라 실제 Tab 이동은
+  // 건너뛰지만, querySelectorAll 자체는 inert를 무시하고 그 안의 버튼들도 매치하므로
+  // .closest("[inert]")로 명시적으로 걸러내야 한다 — 안 그러면 "마지막 요소"가 포커스를
+  // 받을 수 없는 inert 버튼으로 계산돼 Shift+Tab 순환이 멈춘다.
   useEffect(() => {
     if (!isEditing) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsEditing(false);
         textareaRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab" || !overlayRef.current) return;
+      const focusable = Array.from(
+        overlayRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]):not([tabindex="-1"]), textarea:not([disabled])'
+        )
+      ).filter((el) => !el.closest("[inert]"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -176,9 +201,10 @@ export default function Home() {
     if (isEmpty || isSaving) return;
     setIsSaving(true);
     setSaveError(false);
+    setLocalSaveFailed(false);
 
     const payload = text.trim();
-    const record = saveRecord({
+    const record = await saveRecord({
       text: payload,
       isTodo: todoOn,
       dueDate: todoOn ? dueDate : null,
@@ -186,6 +212,22 @@ export default function Home() {
       weather: weatherSnapshot ?? undefined,
     });
     setSavedRecordCount(getRecords().length);
+
+    if (!record.persisted) {
+      // 로컬 저장 자체가 실패 — 서버 동기화를 시도할 필요도 없고(어차피 다시 저장돼도
+      // 다음 새로고침에 사라짐), "저장 성공" 리워드 화면을 보여주면 안 됨(실제로는 유실).
+      console.warn("[remind] localStorage 쓰기 실패 — 기록이 저장되지 않았습니다");
+      setIsSaving(false);
+      setLocalSaveFailed(true);
+      setToastVisible(true);
+      if (toastTimeoutRef.current !== null) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setToastVisible(false);
+      }, 3000);
+      return;
+    }
 
     try {
       await postQuickEntry({
@@ -195,7 +237,7 @@ export default function Home() {
         weather: weatherSnapshot ?? undefined,
         clientMutationId: record.id,
       });
-      markRecordSynced(record.id);
+      await markRecordSynced(record.id);
     } catch (e) {
       console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
       setSaveError(true);
@@ -283,7 +325,7 @@ export default function Home() {
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, maxLength))}
                     aria-label="지금 떠오른 문장은 무엇인가요?"
-                    className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
+                    className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--colorOutlinePrimaryDefault,#03584d)]"
                   />
                 </div>
                 {text.length === 0 && (
@@ -386,7 +428,7 @@ export default function Home() {
 
         {/* 텍스트 편집 오버레이 (기존 레이아웃 유지) */}
         {isEditing && (
-          <div className="absolute inset-0 z-20 flex flex-col bg-transparent">
+          <div ref={overlayRef} className="absolute inset-0 z-20 flex flex-col bg-transparent">
             <div className="bg-red-200 pt-[21px]">
               <div className="flex items-center justify-between px-4 pb-2">
                 <span className="font-[family-name:var(--Typography-font-family)] text-[17px] leading-[22px] text-black">
@@ -440,7 +482,7 @@ export default function Home() {
                     value={text}
                     onChange={(e) => setText(e.target.value.slice(0, maxLength))}
                     aria-label="지금 떠오른 문장은 무엇인가요?"
-                    className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none"
+                    className="flex-1 w-full resize-none border-none bg-transparent pr-6 font-[family-name:var(--Typography-font-family)] text-[length:var(--Typography-font-size-Headline-M,28px)] font-bold leading-[1.3] text-center text-[color:var(--colorElementBase1Default,#35363b)] outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--colorOutlinePrimaryDefault,#03584d)]"
                   />
                 </div>
                 <div
@@ -475,7 +517,10 @@ export default function Home() {
                     <span>to</span>
                   </div>
 
-                  <div className="space-y-2 px-2 text-[19px] font-normal text-black">
+                  {/* iOS 키보드 목업 — 실제 입력 기능 없는 장식용(네이티브 이전 시 제거 예정).
+                      inert로 탭 순서·스크린리더 양쪽에서 완전히 제외해, 이 화면에 들어온
+                      키보드 사용자가 아무 동작도 안 하는 버튼 26개를 거치지 않게 한다. */}
+                  <div className="space-y-2 px-2 text-[19px] font-normal text-black" inert aria-hidden="true">
                     <div className="flex gap-1">
                       {"QWERTYUIOP".split("").map((ch) => (
                         <button
@@ -588,7 +633,13 @@ export default function Home() {
         >
           {toastVisible && (
             <ToastMessage
-              label={saveError ? "저장됨 · 서버 연결 실패" : "저장되었습니다"}
+              label={
+                localSaveFailed
+                  ? "저장하지 못했어요 · 다시 시도해 주세요"
+                  : saveError
+                    ? "저장됨 · 서버 연결 실패"
+                    : "저장되었습니다"
+              }
               variant="labelOnly"
             />
           )}
