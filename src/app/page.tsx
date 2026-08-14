@@ -64,8 +64,26 @@ export default function Home() {
   const [localSaveFailed, setLocalSaveFailed] = useState(false);
   /** 로컬에 저장된 기록 개수 (`$` / `$+1` 치환용) */
   const [savedRecordCount, setSavedRecordCount] = useState(0);
-  /** 페이지 진입 시 한 번 골라 유지하는 동기부여 문장 템플릿 인덱스 */
-  const [headlineTemplateIndex] = useState(pickRandomHeadlineTemplateIndex);
+  /**
+   * 페이지 진입 시 한 번 골라 유지하는 동기부여 문장 템플릿 인덱스.
+   * `Math.random()`을 초기 렌더에서 바로 쓰면 서버(빌드 시점)와 클라이언트(하이드레이션 시점)가
+   * 각자 다른 값을 뽑아 텍스트 불일치(하이드레이션 에러)가 남 — 항상 0(고정값)으로 먼저 렌더하고,
+   * 마운트 후 아래 useEffect에서 실제 랜덤 값으로 교체한다(HYDRATION-MISMATCH, 2026-08-13).
+   */
+  const [headlineTemplateIndex, setHeadlineTemplateIndex] = useState(0);
+  /** 상단 날짜 표시. `new Date()`도 위와 같은 이유로 마운트 후에만 채운다. */
+  const [todayLabel, setTodayLabel] = useState("");
+
+  useEffect(() => {
+    setHeadlineTemplateIndex(pickRandomHeadlineTemplateIndex());
+    setTodayLabel(
+      new Date().toLocaleDateString("ko-KR", {
+        month: "long",
+        day: "numeric",
+        weekday: "short",
+      })
+    );
+  }, []);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -271,11 +289,7 @@ export default function Home() {
           <TopNavBar
             type="Large title"
             headline={recordHeadline}
-            date={new Date().toLocaleDateString("ko-KR", {
-              month: "long",
-              day: "numeric",
-              weekday: "short",
-            })}
+            date={todayLabel}
             trailing={
               <LiveWeatherBlock onSnapshotChange={setWeatherSnapshot} />
             }
