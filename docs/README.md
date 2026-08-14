@@ -10,6 +10,7 @@ docs/
 ├── PROGRESS_CHECKLIST.md       ⭐ 유일한 "지금 뭘 해야 하나" 진실 공급원 (위험도 C/H/M/L)
 │                               + 부록 A(저장 흐름 병목) + 부록 B(Red UI 컴포넌트 표)
 │                               + 부록 C(남은 마일스톤 실행 체크리스트) + 부록 D(완료된 마일스톤 이력)
+├── QA_TEST_CASES.md            기능 로직·데이터·예외 처리 테스트 케이스 (Pass/Fail/Untested) — "그게 실제로 케이스별로 맞게 동작하는가"
 ├── first-launch.md             네이티브 첫 론칭 로드맵 — 기능적 흐름 + 01~08 결정 기록, 한 파일
 ├── DESIGN_TOKENS_RUNBOOK.md    디자인 토큰 파이프라인 운영 가이드
 ├── data-migration.md           (초안) 익명/dev-placeholder 계정 → 실사용자 계정 데이터 병합 전략
@@ -17,13 +18,14 @@ docs/
     └── GIT_SETUP_HISTORY.md    과거 1회성 조사 기록 — 운영 문서 아님
 ```
 
-`docs/` 안에는 이제 실질적으로 **4개 문서**(PROGRESS_CHECKLIST / first-launch / DESIGN_TOKENS_RUNBOOK / data-migration)만 있습니다. 나머지는 지도(이 파일)와 보관함입니다.
+`docs/` 안에는 이제 실질적으로 **5개 문서**(PROGRESS_CHECKLIST / QA_TEST_CASES / first-launch / DESIGN_TOKENS_RUNBOOK / data-migration)만 있습니다. 나머지는 지도(이 파일)와 보관함입니다.
 
 ## 문서별 역할 — 언제 열고, 언제 고치나
 
 | 문서 | 언제 연다 | 언제 고친다 |
 |---|---|---|
 | [PROGRESS_CHECKLIST.md](./PROGRESS_CHECKLIST.md) | "다음에 뭐 하지? 이 항목은 왜 필요하지? 작업 중 뭘 놓치면 안 되지? 지금까지 뭘 끝냈지?" | 항목 상태가 바뀔 때마다. 저장 흐름 코드가 바뀌면 부록 A도, red UI 컴포넌트가 바뀌면 부록 B도, 실행 세부 작업을 체크할 때마다 부록 C도, 마일스톤이 끝나면 부록 D도 |
+| [QA_TEST_CASES.md](./QA_TEST_CASES.md) | "이 기능이 엣지 케이스에서도 실제로 맞게 동작하나? 회귀 안 났나?" | 새 기능 추가·버그 발견·수정 시마다 해당 모듈에 TC 행 추가/갱신. UI 확정 전까지 2부(UI/UX)는 구조만 유지 |
 | [first-launch.md](./first-launch.md) | "네이티브 전환 시 이 영역을 뭐로 결정했지? 뭐가 남았지?" | 해당 섹션(01~08)이 바뀔 때 — 그 섹션의 `구현 이력`에 날짜 추가, 맨 위 상태 표도 갱신 |
 | [DESIGN_TOKENS_RUNBOOK.md](./DESIGN_TOKENS_RUNBOOK.md) | "토큰이 어디서 오는 거지?" | 토큰 파이프라인 자체가 바뀔 때 |
 | [data-migration.md](./data-migration.md) | "dev-placeholder 계정 데이터를 실사용자 계정으로 어떻게 옮기지?" | `AUTH` 구현이 진행되며 병합 전략이 구체화될 때마다 — 초안 상태 해제는 실제 구현 완료 후 |
