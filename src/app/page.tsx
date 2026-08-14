@@ -247,30 +247,36 @@ export default function Home() {
       return;
     }
 
-    try {
-      await postQuickEntry({
-        body: payload,
-        emotionTagIds: [`emotion:${emotion}`],
-        source: "app",
-        weather: weatherSnapshot ?? undefined,
-        clientMutationId: record.id,
-      });
-      await markRecordSynced(record.id);
-    } catch (e) {
-      console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
-      setSaveError(true);
-      setToastVisible(true);
-      if (toastTimeoutRef.current !== null) {
-        window.clearTimeout(toastTimeoutRef.current);
-      }
-      toastTimeoutRef.current = window.setTimeout(() => {
-        setToastVisible(false);
-      }, 2000);
-    }
-
+    // 로컬 저장은 끝났으니 여기서 바로 "저장 완료" 화면으로 전환한다 — 서버 동기화를
+    // 기다리느라 저장 자체가 느려 보이면 안 됨(local-first). 서버 동기화는 아래에서
+    // 화면 전환과 무관하게 백그라운드로 계속 진행되고, 실패해도 토스트로만 알린다
+    // (실패해도 로컬엔 이미 저장돼 있고 syncPendingRecords()가 재시도함).
     setIsEditing(false);
     setIsSaving(false);
     setShowReward(true);
+
+    void (async () => {
+      try {
+        await postQuickEntry({
+          body: payload,
+          emotionTagIds: [`emotion:${emotion}`],
+          source: "app",
+          weather: weatherSnapshot ?? undefined,
+          clientMutationId: record.id,
+        });
+        await markRecordSynced(record.id);
+      } catch (e) {
+        console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
+        setSaveError(true);
+        setToastVisible(true);
+        if (toastTimeoutRef.current !== null) {
+          window.clearTimeout(toastTimeoutRef.current);
+        }
+        toastTimeoutRef.current = window.setTimeout(() => {
+          setToastVisible(false);
+        }, 2000);
+      }
+    })();
   };
 
   const handleGoToFeed = () => {
