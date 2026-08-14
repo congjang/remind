@@ -147,6 +147,12 @@ export async function GET(req: Request) {
     }
 
     let locationLabel: string | null = null;
+    // TODO: 디버깅용 임시 필드(_debugKakao) — 원인 확인되면 제거
+    let debugKakao: string | undefined;
+    if (!kakaoRes?.ok) {
+      const t = kakaoRes ? await kakaoRes.text() : "kakaoKey not set";
+      debugKakao = `status=${kakaoRes?.status} body=${t.slice(0, 300)}`;
+    }
     if (kakaoRes?.ok) {
       const kjson = (await kakaoRes.json()) as KakaoAddrJson;
       const doc = kjson.documents?.[0];
@@ -164,6 +170,7 @@ export async function GET(req: Request) {
       extra: pmLabel,
       icon,
       weatherId: wid,
+      ...(debugKakao ? { _debugKakao: debugKakao } : {}),
     });
   } catch (e) {
     return NextResponse.json(
