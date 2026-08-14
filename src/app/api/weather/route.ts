@@ -14,6 +14,28 @@ type OwmAirJson = {
   list?: { components?: { pm2_5?: number } }[];
 };
 
+type KakaoAddrJson = {
+  documents?: {
+    address?: {
+      region_1depth_name?: string;
+      region_2depth_name?: string;
+      region_3depth_name?: string;
+    };
+  }[];
+};
+
+function formatKoreanAddress(doc: KakaoAddrJson["documents"] extends (infer D)[] | undefined
+  ? D
+  : never) {
+  if (!doc?.address) return null;
+  const a = doc.address;
+  const s = [a.region_1depth_name, a.region_2depth_name, a.region_3depth_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return s || null;
+}
+
 function parseOwmErrorBody(text: string): { cod?: number; message?: string } {
   try {
     const j = JSON.parse(text) as { cod?: number | string; message?: string };
@@ -49,9 +71,7 @@ function owmFailureHint(status: number, owmCod: number | undefined, message: str
 
 /**
  * GET /api/weather?lat=..&lon=..
- * 서버 환경변수: OPENWEATHERMAP_API_KEY (필수)
- * 위치 표시는 OpenWeatherMap 응답의 도시명(name)을 그대로 씀 — 이전엔 카카오 역지오코딩으로
- * 시·구·동까지 표시했으나, 실제로 발급받아 쓴 적 없는 키였음이 확인돼 제거함(2026-08-14).
+ * 서버 환경변수: OPENWEATHERMAP_API_KEY (필수), KAKAO_REST_API_KEY (선택, 시·구·동 역지오코딩 — 2026-08-14 재발급 후 재적용)
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -69,13 +89,24 @@ export async function GET(req: Request) {
     );
   }
 
+  const kakaoKey = process.env.KAKAO_REST_API_KEY;
+
   try {
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&appid=${encodeURIComponent(owKey)}&units=metric&lang=kr`;
     const airUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&appid=${encodeURIComponent(owKey)}`;
 
-    const [weatherRes, airRes] = await Promise.all([
+    const [weatherRes, airRes, kakaoRes] = await Promise.all([
       fetch(weatherUrl, { cache: "no-store" }),
       fetch(airUrl, { cache: "no-store" }),
+      kakaoKey
+        ? fetch(
+            `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${encodeURIComponent(lon)}&y=${encodeURIComponent(lat)}`,
+            {
+              headers: { Authorization: `KakaoAK ${kakaoKey}` },
+              cache: "no-store",
+            },
+          )
+        : Promise.resolve(null),
     ]);
 
     if (!weatherRes.ok) {
@@ -115,7 +146,15 @@ export async function GET(req: Request) {
       }
     }
 
-    const locationLabel = weatherJson.name ? `${weatherJson.name}` : "위치 정보 없음";
+    let locationLabel: string | null = null;
+    if (kakaoRes?.ok) {
+      const kjson = (await kakaoRes.json()) as KakaoAddrJson;
+      const doc = kjson.documents?.[0];
+      locationLabel = doc ? formatKoreanAddress(doc) : null;
+    }
+    if (!locationLabel) {
+      locationLabel = weatherJson.name ? `${weatherJson.name}` : "위치 정보 없음";
+    }
 
     const icon = mapOwmWeatherIdToIcon(wid);
 
