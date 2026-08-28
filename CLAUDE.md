@@ -190,6 +190,9 @@ npx prisma studio        # DB 관리 UI
 | `OPENWEATHERMAP_API_KEY` | `.env.local` | 날씨 기능 필수 | OWM API 키 |
 | `KAKAO_REST_API_KEY` | `.env.local` | 선택 | 역지오코딩(시·구·동 단위 한글 지역명) |
 | `DATABASE_URL` | `server/.env` | 서버 필수 | PostgreSQL 연결 문자열 |
+| `JWT_SECRET` | `server/.env` | 서버 필수 | 액세스 토큰 서명 키 (미설정 시 서버 기동 실패) |
+| `GOOGLE_CLIENT_ID` | `server/.env` | 소셜 로그인 선택 | `POST /v1/auth/social`의 Google identityToken aud 검증 |
+| `APPLE_CLIENT_ID` | `server/.env` | 소셜 로그인 선택 | `POST /v1/auth/social`의 Apple identityToken aud 검증 |
 
 ---
 

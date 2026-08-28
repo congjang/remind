@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import pino from "pino";
 import { buildApp, REQUEST_LOG_REDACT } from "./app.js";
@@ -939,6 +939,60 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
         cookies: { remind_refresh: token },
       });
       expect(refreshAfterLogout.statusCode).toBe(401);
+    });
+  });
+
+  // 실제 Apple/Google identityToken 검증은 provider의 JWKS 엔드포인트가 필요해
+  // 오프라인 단위 테스트로는 재현 불가 — 여기서는 네트워크 없이 확정적으로 검증
+  // 가능한 경계(스키마 검증·설정 누락·malformed 토큰 조기 실패)만 커버한다.
+  describe("social (docs/PROGRESS_CHECKLIST.md § 소셜 로그인 UX 흐름)", () => {
+    const originalGoogleClientId = process.env.GOOGLE_CLIENT_ID;
+
+    afterEach(() => {
+      if (originalGoogleClientId === undefined) {
+        delete process.env.GOOGLE_CLIENT_ID;
+      } else {
+        process.env.GOOGLE_CLIENT_ID = originalGoogleClientId;
+      }
+    });
+
+    it("provider가 apple/google이 아니면 400", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/v1/auth/social",
+        payload: { provider: "kakao", identityToken: "whatever" },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("identityToken이 없으면 400", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/v1/auth/social",
+        payload: { provider: "google" },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("GOOGLE_CLIENT_ID 미설정 상태에서 google 로그인을 시도하면 503(설정 오류를 인증 실패와 구분)", async () => {
+      delete process.env.GOOGLE_CLIENT_ID;
+      const res = await app.inject({
+        method: "POST",
+        url: "/v1/auth/social",
+        payload: { provider: "google", identityToken: "whatever" },
+      });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it("형식이 잘못된 identityToken은 JWKS 네트워크 조회 없이 401로 조기 실패한다", async () => {
+      process.env.GOOGLE_CLIENT_ID = "test-google-client-id";
+      const res = await app.inject({
+        method: "POST",
+        url: "/v1/auth/social",
+        payload: { provider: "google", identityToken: "not-a-real-jwt" },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().error).toBe("유효하지 않은 로그인 정보입니다");
     });
   });
 });

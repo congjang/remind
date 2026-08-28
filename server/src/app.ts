@@ -23,6 +23,11 @@ import {
   REFRESH_COOKIE_NAME,
   REFRESH_COOKIE_PATH,
 } from "./auth.js";
+import {
+  verifySocialIdentityToken,
+  SocialAuthConfigError,
+  SocialAuthVerificationError,
+} from "./socialAuth.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -83,6 +88,12 @@ const authSignupSchema = z.object({
 const authLoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1).max(200),
+});
+
+/** docs/PROGRESS_CHECKLIST.md § 소셜 로그인 UX 흐름의 identityToken 검증 요청 바디. */
+const authSocialSchema = z.object({
+  provider: z.enum(["apple", "google"]),
+  identityToken: z.string().min(1),
 });
 
 /** 네이티브 클라이언트는 쿠키 저장소가 없어 바디로 refresh token을 실어 보낼 수 있음. */
@@ -380,6 +391,57 @@ export async function buildApp(deps?: {
 
     reply.clearCookie(REFRESH_COOKIE_NAME, { path: REFRESH_COOKIE_PATH });
     return { ok: true as const };
+  });
+
+  // Apple/Google 소셜 로그인 — docs/PROGRESS_CHECKLIST.md § 소셜 로그인 UX 흐름(설계)의
+  // 서버 구현. 클라이언트가 provider SDK로 받은 identityToken(JWT)을 그대로 넘기면,
+  // 서버가 provider의 JWKS 공개키로 서명·aud·iss를 검증해 email을 신뢰할 수 있는
+  // 값으로 확정한다 — 클라이언트가 보낸 email 필드를 별도로 받지 않는 이유가 이것
+  // (검증 없이 임의 email을 자처할 수 있으면 계정 탈취 벡터가 된다).
+  //
+  // signup의 "claim" 패턴과 동일하게, 이미 같은 email의 User가 있으면(비밀번호
+  // 로그인으로 가입했든, X-Dev-Email placeholder든) 그 계정에 그대로 로그인시키고
+  // 없으면 passwordHash 없이 새로 만든다 — 이 계정은 소셜 로그인 전용이 되며
+  // User.passwordHash가 nullable이라 스키마 변경 없이 그대로 지원된다.
+  //
+  // 클라이언트 쪽 로그인 화면/버튼은 아직 없음 — 이 라우트는 서버 구현만 완료된
+  // 상태(SYNC-LIVE 참고).
+  app.post("/v1/auth/social", async (req, reply) => {
+    const parsed = authSocialSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: parsed.error.flatten() });
+    }
+    const { provider, identityToken } = parsed.data;
+
+    let identity;
+    try {
+      identity = await verifySocialIdentityToken(provider, identityToken);
+    } catch (err) {
+      if (err instanceof SocialAuthConfigError) {
+        req.log.error(err);
+        return reply.code(503).send({ error: "social_login_not_configured" });
+      }
+      if (err instanceof SocialAuthVerificationError) {
+        return reply.code(401).send({ error: "유효하지 않은 로그인 정보입니다" });
+      }
+      throw err;
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { email: identity.email },
+    });
+    const user =
+      existing ?? (await prisma.user.create({ data: { email: identity.email } }));
+
+    const { accessToken, refreshToken, expiresAt } = await issueTokens(
+      user.id,
+    );
+    setRefreshCookie(reply, refreshToken, expiresAt);
+    return {
+      user: { id: user.id, email: user.email },
+      accessToken,
+      refreshToken,
+    };
   });
   // ─────────────────────────────────────────────────────────────────────────
 
