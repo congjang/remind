@@ -5,7 +5,7 @@ import { buildApp } from "./app.js";
 // 산발적인 런타임 에러 대신 기동 시점에 즉시 crash-out.
 if (!process.env.JWT_SECRET) {
   console.error(
-    "[remind-api] FATAL: JWT_SECRET is not set — see server/.env.example. " +
+    "[snatty-api] FATAL: JWT_SECRET is not set — see server/.env.example. " +
     "Refusing to start."
   );
   process.exit(1);

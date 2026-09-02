@@ -19,7 +19,7 @@ const meta: Meta<typeof TopNavBar> = {
     docs: {
       description: {
         component:
-          "Remind 앱 상단 내비게이션 바입니다. type에 따라 레이아웃과 우측 액션 구성이 달라집니다. Large title, date+viewmode 등을 Storybook에서 바로 확인할 수 있습니다.",
+          "Snatty 앱 상단 내비게이션 바입니다. type에 따라 레이아웃과 우측 액션 구성이 달라집니다. Large title, date+viewmode 등을 Storybook에서 바로 확인할 수 있습니다.",
       },
     },
   },

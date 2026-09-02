@@ -262,14 +262,14 @@ describe("요청 로그 (SECURITY-HARDENING § 로그 레벨 명시·민감정�
       payload: { email: "logtest@example.com", password: "correct-horse-1" },
     });
     const accessToken = signup.json().accessToken as string;
-    const refreshCookie = signup.cookies.find((c) => c.name === "remind_refresh")!.value;
+    const refreshCookie = signup.cookies.find((c) => c.name === "snatty_refresh")!.value;
 
     await app.inject({
       method: "POST",
       url: "/v1/entries/quick",
       headers: {
         authorization: `Bearer ${accessToken}`,
-        cookie: `remind_refresh=${refreshCookie}`,
+        cookie: `snatty_refresh=${refreshCookie}`,
         "content-type": "application/json",
       },
       payload: { body: "로그 마스킹 확인용" },
@@ -291,10 +291,10 @@ describe("요청 로그 (SECURITY-HARDENING § 로그 레벨 명시·민감정�
       req: {
         headers: {
           authorization: "Bearer super-secret-jwt",
-          cookie: "remind_refresh=super-secret-refresh",
+          cookie: "snatty_refresh=super-secret-refresh",
         },
       },
-      res: { headers: { "set-cookie": "remind_refresh=super-secret-refresh; HttpOnly" } },
+      res: { headers: { "set-cookie": "snatty_refresh=super-secret-refresh; HttpOnly" } },
     });
 
     const out = lines.join("\n");
@@ -505,7 +505,7 @@ describe("requireAuth 미들웨어 (보호 라우트 공통 — /v1/entries/quic
 });
 
 describe("POST /v1/entries/quick (AUTH § 배포 시 하위호환 테스트 — 기존 로컬 큐 기록 재전송)", () => {
-  // src/app/lib/remindApi.ts의 syncPendingRecords()가 실제로 보내는 payload 형태를 그대로
+  // src/app/lib/snattyApi.ts의 syncPendingRecords()가 실제로 보내는 payload 형태를 그대로
   // 재현한다: body/emotionTagIds/source/weather/clientMutationId. 로그인 UI가 아직 없어
   // 실제 앱 화면으로는 이 흐름을 재현할 수 없지만(session.ts 주석 참고), 서버가 이 요청을
   // 새 Bearer 인증으로도 정상 처리하는지는 로그인 UI와 무관하게 검증 가능하다.
@@ -760,7 +760,7 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
   });
 
   function refreshCookieValue(res: Awaited<ReturnType<typeof app.inject>>) {
-    const found = res.cookies.find((c) => c.name === "remind_refresh");
+    const found = res.cookies.find((c) => c.name === "snatty_refresh");
     return found?.value;
   }
 
@@ -878,7 +878,7 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
       const res = await app.inject({
         method: "POST",
         url: "/v1/auth/refresh",
-        cookies: { remind_refresh: oldToken },
+        cookies: { snatty_refresh: oldToken },
       });
       expect(res.statusCode).toBe(200);
       const newToken = refreshCookieValue(res);
@@ -889,7 +889,7 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
       const reuse = await app.inject({
         method: "POST",
         url: "/v1/auth/refresh",
-        cookies: { remind_refresh: oldToken },
+        cookies: { snatty_refresh: oldToken },
       });
       expect(reuse.statusCode).toBe(401);
 
@@ -897,7 +897,7 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
       const newTokenNowBlocked = await app.inject({
         method: "POST",
         url: "/v1/auth/refresh",
-        cookies: { remind_refresh: newToken! },
+        cookies: { snatty_refresh: newToken! },
       });
       expect(newTokenNowBlocked.statusCode).toBe(401);
     });
@@ -906,7 +906,7 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
       const res = await app.inject({
         method: "POST",
         url: "/v1/auth/refresh",
-        cookies: { remind_refresh: "not-a-real-token" },
+        cookies: { snatty_refresh: "not-a-real-token" },
       });
       expect(res.statusCode).toBe(401);
     });
@@ -929,14 +929,14 @@ describe("POST /v1/auth/* (docs/auth-token-strategy.md)", () => {
       const logoutRes = await app.inject({
         method: "POST",
         url: "/v1/auth/logout",
-        cookies: { remind_refresh: token },
+        cookies: { snatty_refresh: token },
       });
       expect(logoutRes.statusCode).toBe(200);
 
       const refreshAfterLogout = await app.inject({
         method: "POST",
         url: "/v1/auth/refresh",
-        cookies: { remind_refresh: token },
+        cookies: { snatty_refresh: token },
       });
       expect(refreshAfterLogout.statusCode).toBe(401);
     });

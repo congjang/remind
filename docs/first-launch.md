@@ -112,7 +112,7 @@
 
 **구현 이력** — Next 웹 프로토타입 [`src/app`](../src/app/) 기준 누적, 최신이 위:
 
-- **2025-03-24** — 마이크로 저널 웹: 텍스트·감정·할 일·로컬 저장 + 선택 `remind-api` 동기화. 추가로 기록하기 상단 당일 날씨·대략 위치 표시, 저장 시점 날씨 스냅샷을 기록에 부착 → 모아보기 피드에서 한 줄로 확인 가능(1.0 필수 경로와 독립적인 UX). 네이티브 1.0 범위표는 변경 없음; 웹은 검증용 레퍼런스.
+- **2025-03-24** — 마이크로 저널 웹: 텍스트·감정·할 일·로컬 저장 + 선택 `snatty-api` 동기화. 추가로 기록하기 상단 당일 날씨·대략 위치 표시, 저장 시점 날씨 스냅샷을 기록에 부착 → 모아보기 피드에서 한 줄로 확인 가능(1.0 필수 경로와 독립적인 UX). 네이티브 1.0 범위표는 변경 없음; 웹은 검증용 레퍼런스.
 
 ## 02 모바일 스택·위젯 전략
 
@@ -184,9 +184,9 @@ Expo만으로 위젯을 "완전 관리형"으로 쓰기 어렵기 때문에, **�
 - **2026-07-11** — `SECURITY-HARDENING`을 `상시 보안 방어`/`배포 전 체크리스트` 2섹션으로 재분류, 신규 3건(에러 응답 보안·HSTS·로그 샘플링 테스트) 추가, 배포 보안 체크 워크플로우 3단계 작성. HSTS는 `@fastify/helmet` 기본값에 이미 포함돼 있어 완료 처리. 현재 7/15(상시 7/10 + 배포 전 0/5).
 - **2026-07-11** — `SECURITY-HARDENING` 6/11 완료: `server/package.json`에 `@fastify/helmet`·`@fastify/rate-limit` 추가, `server/src/index.ts`에 등록(헤더 미들웨어, 100req/분 레이트 리미팅, `bodyLimit: 1MB` 명시). `pushTokenSchema.token`에 `.max(512)`. 환경변수 재감사(커밋된 시크릿 없음 확인). `npm audit fix`로 high 취약점 6건 해결(defu, effect/@prisma, fast-uri, fastify — 남은 1건은 low·Windows dev 전용이라 보류). `/health` 응답으로 헤더·레이트리밋 헤더 실동작 확인.
 - **2026-07-11** — 코드 감사로 `SECURITY-HARDENING`(레이트 리미팅·보안 헤더 부재), `DATA-INTEGRITY`(삭제 엔드포인트 부재, `deleted` 필드 미사용) 두 백로그 항목 신설. [PROGRESS_CHECKLIST.md](./PROGRESS_CHECKLIST.md) 참고.
-- **2026-07-11** — `SYNC`(오프라인 동기화 큐): `recordsStore.ts`에 `synced?: boolean` 필드(스키마 v2, 마이그레이션 포함) + `getUnsyncedRecords()`/`markRecordSynced()`. `remindApi.ts`에 `syncPendingRecords()`(순차 처리, 첫 실패 시 중단) + `postQuickEntry()`가 `clientMutationId` 전송. `page.tsx`가 앱 마운트·`online` 이벤트 시 재시도 트리거. 서버는 `clientMutationId` 기준 `findUnique` 후 없으면 `create`, 동시 경합(P2002)도 기존 row 반환하도록 처리(`server/src/index.ts`).
+- **2026-07-11** — `SYNC`(오프라인 동기화 큐): `recordsStore.ts`에 `synced?: boolean` 필드(스키마 v2, 마이그레이션 포함) + `getUnsyncedRecords()`/`markRecordSynced()`. `snattyApi.ts`에 `syncPendingRecords()`(순차 처리, 첫 실패 시 중단) + `postQuickEntry()`가 `clientMutationId` 전송. `page.tsx`가 앱 마운트·`online` 이벤트 시 재시도 트리거. 서버는 `clientMutationId` 기준 `findUnique` 후 없으면 `create`, 동시 경합(P2002)도 기존 row 반환하도록 처리(`server/src/index.ts`).
 - **2026-04-17** — 프로덕션 가드: `NODE_ENV=production` && `ALLOW_DEV_AUTH !== "true"` → `process.exit(1)`. 실수로 dev auth를 프로덕션에 배포하면 즉시 종료. `server/.env.example`에 `ALLOW_DEV_AUTH` 주석 경고 추가. CORS 환경변수 제한: `CORS_ORIGIN` 환경변수 도입, 프로덕션은 지정 도메인만 허용. `resolveDevEmail()` 헬퍼로 3개 라우트의 `X-Dev-Email` 추출 코드 중앙화(`AUTH` 전환 시 이 함수만 수정). `// TODO: X-Dev-Email → JWT/session으로 교체 필요` 주석 삽입, 완료 기준은 실 유저 세션 발급·검증.
-- **2025-03-24** — Next 앱 라우트: `GET /api/weather?lat=&lon=` (OWM + 선택 카카오 역지오코딩, `OPENWEATHERMAP_API_KEY`/`KAKAO_REST_API_KEY`는 서버 전용 `.env.local`). remind-api: `POST /v1/entries/quick` 본문에 선택 `weather` 객체(`location`,`temp`,`extra`,`icon`,`weatherId`), Prisma `JournalEntry.weather`(`Json?`), 마이그레이션 `server/prisma/migrations/20250324120000_journal_entry_weather/`. 동기화: 클라이언트는 로컬 `StoredRecord`에 스냅샷을 먼저 저장 후, API URL 설정된 경우에만 서버 전송.
+- **2025-03-24** — Next 앱 라우트: `GET /api/weather?lat=&lon=` (OWM + 선택 카카오 역지오코딩, `OPENWEATHERMAP_API_KEY`/`KAKAO_REST_API_KEY`는 서버 전용 `.env.local`). snatty-api: `POST /v1/entries/quick` 본문에 선택 `weather` 객체(`location`,`temp`,`extra`,`icon`,`weatherId`), Prisma `JournalEntry.weather`(`Json?`), 마이그레이션 `server/prisma/migrations/20250324120000_journal_entry_weather/`. 동기화: 클라이언트는 로컬 `StoredRecord`에 스냅샷을 먼저 저장 후, API URL 설정된 경우에만 서버 전송.
 
 ## 04 데이터 모델
 

@@ -1,4 +1,4 @@
-# remind-app
+# snatty-app
 
 순간을 기록하고, AI와 함께 되돌아보는 마이크로 저널링 앱
 

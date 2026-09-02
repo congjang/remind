@@ -14,17 +14,17 @@ _myproduct/
 ├── adailyrecord-design-tokens/   # 여러 제품이 공유하는 "프리미티브" 토큰 패키지
 │   ├── design-tokens/*.json      # colors, typography, grid, elevation, icons (Figma 원본 JSON)
 │   ├── css/design-tokens.css     # :root 글로벌 프리미티브 (생성 파일)
-│   └── css/grid.css              # Grid 전용 (생성 파일, remind는 생략 가능)
+│   └── css/grid.css              # Grid 전용 (생성 파일, snatty는 생략 가능)
 │
-└── remind-app/                   # 이 레포. Remind 전용 시맨틱 + 컴포넌트
+└── snatty-app/                   # 이 레포. Snatty 전용 시맨틱 + 컴포넌트
     ├── variable_plugin_JSON/          # ⚠️ deprecated (아래 §2 참고), 빌드에 사용 안 함
     ├── .cache/figma/raw/tokens.json   # Figma REST API export본 — 유일한 소스 오브 트루스
     ├── src/app/design-tokens/primitives.css  # 생성 파일 (패키지 프리미티브 복사본)
-    ├── src/app/design-tokens/semantic.css    # 생성 파일 (Remind 시맨틱 + 타이포)
+    ├── src/app/design-tokens/semantic.css    # 생성 파일 (Snatty 시맨틱 + 타이포)
     └── src/icons/                         # 아이콘 SVG + 매핑 문서
 ```
 
-과거 `remind-app`의 `package.json`에는 `"@adailyrecord/design-tokens": "file:../adailyrecord-design-tokens"` 의존성이 있었지만, 실제로는 어떤 코드에서도 node_modules 경유로 import되지 않아(생성된 CSS는 완전히 인라인, 토큰 빌드 스크립트도 `scripts/figma/tokenRoot.mjs`에서 파일시스템 상대경로로 직접 접근) 2026-07-10에 제거했습니다. Vercel 등 `adailyrecord-design-tokens` 형제 디렉토리가 없는 환경에서는 이 `file:` 의존성 때문에 `npm install`이 실패했기 때문입니다. **`next build`/`next dev`는 이제 두 레포가 함께 없어도 정상 동작합니다.** 토큰을 실제로 재생성(`npm run tokens:figma:*`)할 때만 형제 디렉토리가 로컬에 있어야 합니다.
+과거 `snatty-app`의 `package.json`에는 `"@adailyrecord/design-tokens": "file:../adailyrecord-design-tokens"` 의존성이 있었지만, 실제로는 어떤 코드에서도 node_modules 경유로 import되지 않아(생성된 CSS는 완전히 인라인, 토큰 빌드 스크립트도 `scripts/figma/tokenRoot.mjs`에서 파일시스템 상대경로로 직접 접근) 2026-07-10에 제거했습니다. Vercel 등 `adailyrecord-design-tokens` 형제 디렉토리가 없는 환경에서는 이 `file:` 의존성 때문에 `npm install`이 실패했기 때문입니다. **`next build`/`next dev`는 이제 두 레포가 함께 없어도 정상 동작합니다.** 토큰을 실제로 재생성(`npm run tokens:figma:*`)할 때만 형제 디렉토리가 로컬에 있어야 합니다.
 
 `src/app/globals.css`는 부팅 시 다음 순서로 토큰을 로드합니다.
 
@@ -70,9 +70,9 @@ npm run tokens:build:semantic-css
 | 파일 | 생성 스크립트 | 비고 |
 |------|----------------|------|
 | `../adailyrecord-design-tokens/css/design-tokens.css` | `build-semantic-css.mjs --mode global` | 프리미티브, 여러 제품 공유 |
-| `../adailyrecord-design-tokens/css/grid.css` | 〃 | Remind는 semantic.css에 그리드 포함되어 생략 가능 |
+| `../adailyrecord-design-tokens/css/grid.css` | 〃 | Snatty는 semantic.css에 그리드 포함되어 생략 가능 |
 | `src/app/design-tokens/primitives.css` | 〃 | 패키지 프리미티브의 로컬 복사본 |
-| `src/app/design-tokens/semantic.css` | `build-semantic-css.mjs --mode semantic` | Remind 전용 색·그리드·타이포 |
+| `src/app/design-tokens/semantic.css` | `build-semantic-css.mjs --mode semantic` | Snatty 전용 색·그리드·타이포 |
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * One-shot smoke test for remind-api (requires Docker Postgres + `npm run dev`).
+ * One-shot smoke test for snatty-api (requires Docker Postgres + `npm run dev`).
  *
  *   cd server && docker compose up -d && cp -n .env.example .env && npx prisma db push && npm run dev
  *   # other terminal:

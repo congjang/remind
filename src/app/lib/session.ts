@@ -1,7 +1,7 @@
 // 로그인 identity 추적 + 계정 전환/로그아웃 시 로컬 데이터 무효화 정책.
 //
-// 서버 라우트는 JWT 인증으로 전환됐지만(remindApi.ts), 로그인 UI가 아직 없어
-// `remind-dev-email`이 여전히 클라이언트 로컬 전용 identity 소스다.
+// 서버 라우트는 JWT 인증으로 전환됐지만(snattyApi.ts), 로그인 UI가 아직 없어
+// `snatty-dev-email`이 여전히 클라이언트 로컬 전용 identity 소스다.
 // 이 모듈이 그 identity가 바뀌는 모든 경로(로그아웃, 다른 계정 재로그인)를
 // 감지해 로컬에 남은 기록을 지우는 단일 진입점 역할을 한다 — 공유 기기에서
 // 이전 계정의 기록이 새 계정 화면에 노출되는 것을 막기 위함.
@@ -9,10 +9,10 @@
 // 무효화 정책(ensureIdentityConsistency/logout/loginAs)은 그대로 재사용 가능.
 
 import { clearAllRecords, invalidateRecordsCache } from "./recordsStore";
-import { setAccessToken } from "./remindApi";
+import { setAccessToken } from "./snattyApi";
 
-const DEV_EMAIL_KEY = "remind-dev-email";
-const LAST_IDENTITY_KEY = "remind-last-identity-v1";
+const DEV_EMAIL_KEY = "snatty-dev-email";
+const LAST_IDENTITY_KEY = "snatty-last-identity-v1";
 const FALLBACK_IDENTITY = "dev@local.invalid";
 
 function isBrowser() {

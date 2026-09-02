@@ -184,7 +184,7 @@ export default function FeedPage() {
   // 다른 탭에서 localStorage가 바뀌면 반영
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "remind-records-v1" || e.key === null) refreshRecords();
+      if (e.key === "snatty-records-v1" || e.key === null) refreshRecords();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);

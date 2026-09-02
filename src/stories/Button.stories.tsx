@@ -10,7 +10,7 @@ const meta: Meta<typeof Button> = {
     docs: {
       description: {
         component:
-          "Remind 앱에서 사용하는 공용 버튼입니다. variant / level / size 조합과 fullWidth, loading 상태를 Storybook Controls에서 바로 테스트할 수 있습니다.",
+          "Snatty 앱에서 사용하는 공용 버튼입니다. variant / level / size 조합과 fullWidth, loading 상태를 Storybook Controls에서 바로 테스트할 수 있습니다.",
       },
     },
   },

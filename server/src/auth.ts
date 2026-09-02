@@ -7,7 +7,7 @@ const BCRYPT_ROUNDS = 12;
 /** @see ../../docs/auth-token-strategy.md */
 export const ACCESS_TOKEN_TTL = "15m";
 export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일
-export const REFRESH_COOKIE_NAME = "remind_refresh";
+export const REFRESH_COOKIE_NAME = "snatty_refresh";
 /** 리프레시 쿠키는 /v1/auth 라우트에만 첨부 — 다른 요청에 불필요하게 노출되지 않도록. */
 export const REFRESH_COOKIE_PATH = "/v1/auth";
 
@@ -15,7 +15,7 @@ function jwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new Error(
-      "[remind-api] JWT_SECRET is not set — see server/.env.example",
+      "[snatty-api] JWT_SECRET is not set — see server/.env.example",
     );
   }
   return secret;
@@ -45,7 +45,7 @@ let dummyHashPromise: Promise<string> | null = null;
 export function dummyPasswordHash(): Promise<string> {
   if (!dummyHashPromise) {
     dummyHashPromise = bcrypt.hash(
-      "remind-timing-mitigation-constant",
+      "snatty-timing-mitigation-constant",
       BCRYPT_ROUNDS,
     );
   }

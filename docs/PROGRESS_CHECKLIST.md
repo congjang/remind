@@ -105,7 +105,7 @@ sequenceDiagram
     participant U as 사용자
     participant C as 클라이언트(앱)
     participant P as Apple/Google
-    participant S as 서버(remind-api)
+    participant S as 서버(snatty-api)
     participant DB as DB
 
     Note over U,C: 소프트 게이팅 팝업 노출 시점
@@ -158,7 +158,7 @@ sequenceDiagram
 | 자동화 단계 | 개수 | 항목 |
 |---|---|---|
 | 기획 (Planning) | 7 | 스키마 마이그레이션, 로그아웃 무효화, 오프라인 재시도, `clientMutationId` 경합, 레이트 리미팅, bodyLimit/token 경계값, 포커스 트랩·ESC |
-| 구현 완료 (Implemented) | 2 | 소프트 삭제 소유권·멱등(`server/src/app.test.ts`, 5케이스), 401 재시도 큐 분기(`remindApi.ts`의 `authedFetch()`, 2026-07-15 구현 — vitest 자동 테스트는 아직 없어 순위표에는 남아있음, 여기 개수만 재분류 반영이 안 돼 있었음) |
+| 구현 완료 (Implemented) | 2 | 소프트 삭제 소유권·멱등(`server/src/app.test.ts`, 5케이스), 401 재시도 큐 분기(`snattyApi.ts`의 `authedFetch()`, 2026-07-15 구현 — vitest 자동 테스트는 아직 없어 순위표에는 남아있음, 여기 개수만 재분류 반영이 안 돼 있었음) |
 | 배포 후 검증됨 (Verified) | 0 | — (아직 실 배포 환경 없음) |
 
 | 심각도 | 개수 | 기준 |
@@ -281,7 +281,7 @@ sequenceDiagram
 | **`AUTH` — 인증 (JWT)** | 🔴 미완 (12/13) | 프로덕션 배포 차단. `signup/login/refresh/logout` 4종 라우트 + `resolveDevEmail()` → JWT 미들웨어 교체 + 클라이언트 토큰 저장·401 재시도 + 탭 경합 수정 + 하위호환 테스트(2026-07-22, 로그인 UI 없이 로컬 검증 완료)까지 완료 — 남은 건 UX 1건(엣지 케이스)뿐. **단, 로그인 UI가 아직 없어 실제로 서버에 로그인해서 쓸 방법은 없음** — 그 전까지는 `postQuickEntry` 등 서버 동기화가 전부 조용히 실패(로컬 저장은 정상 동작) |
 | **`SECURITY-HARDENING`** | ✅ 완료 (15/15) | 상시 보안 방어 **10/10 완료**(헤더·레이트 리미팅·bodyLimit·HSTS·토큰 길이·환경변수·`npm audit`·전역 에러 핸들러·429 안내·schedule 스키마) + 배포 전 체크리스트 **5/5 완료**(2026-08-13, Render+Neon 실배포로 CORS_ORIGIN·JWT_SECRET 가드·로그 레벨·로그 마스킹·HSTS 전부 검증) |
 | **`DATA-INTEGRITY`** | 🟡 진행중 (5/10) | `DELETE /v1/entries/:id` 소프트 삭제 구현(2026-07-13), `body` 불변성 가드·DB 백업·계정 삭제 보유기간 정책(2026-07-16), 데이터 내보내기 지원 스크립트(2026-07-24) 완료. 삭제 UI·확인 다이얼로그 등 나머지는 대기 |
-| **`SYNC-LIVE` — 서버 동기화 (실 사용자 연결)** | 🟡 진행중 (7/12) | 로그아웃/재로그인 시 로컬 데이터 무효화(`session.ts`, 2026-07-13) + `X-Dev-Email` → `Authorization: Bearer` 교체(`remindApi.ts`, 2026-07-15에 완료됐으나 이 줄만 뒤늦게 반영). **`GET /v1/entries`(목록 조회)가 체크리스트에 없던 걸 2026-07-16에 신규 항목으로 추가, 2026-07-22에 구현 완료**. 같은 날 대량 업로드 멱등성·부분 실패 재시도 큐 유지 2건 검증 완료 + **다중 기기 병합 전략도 결정**(병합 충돌은 데이터 모델상 구조적으로 발생하지 않아 추가 코드 없이 완료). `updatedAt` 증분 동기화는 별도 항목으로 분리해 필요성이 확인될 때까지 보류(2026-07-18). **[2026-08-14] 비로그인 모드 정책이 재검토돼 [계정 정책](#계정-정책--회원비회원-데이터-저장) 섹션으로 승격**, 그 결과 소셜 로그인·투명한 로컬 모드 고지 UI 2개 항목 신규 추가. **[같은 날] 소셜 로그인 서버 라우트(`POST /v1/auth/social`) 구현 완료** — 다만 로그인 UI가 없어 여전히 대기로 유지(아래 표 참고). 남은 5개(로그인 유도 시점·온보딩 업로드 흐름·소셜 로그인·투명 고지 UI·`updatedAt` 보류분)는 화면 결정 또는 신규 개발 필요해 대기 |
+| **`SYNC-LIVE` — 서버 동기화 (실 사용자 연결)** | 🟡 진행중 (7/12) | 로그아웃/재로그인 시 로컬 데이터 무효화(`session.ts`, 2026-07-13) + `X-Dev-Email` → `Authorization: Bearer` 교체(`snattyApi.ts`, 2026-07-15에 완료됐으나 이 줄만 뒤늦게 반영). **`GET /v1/entries`(목록 조회)가 체크리스트에 없던 걸 2026-07-16에 신규 항목으로 추가, 2026-07-22에 구현 완료**. 같은 날 대량 업로드 멱등성·부분 실패 재시도 큐 유지 2건 검증 완료 + **다중 기기 병합 전략도 결정**(병합 충돌은 데이터 모델상 구조적으로 발생하지 않아 추가 코드 없이 완료). `updatedAt` 증분 동기화는 별도 항목으로 분리해 필요성이 확인될 때까지 보류(2026-07-18). **[2026-08-14] 비로그인 모드 정책이 재검토돼 [계정 정책](#계정-정책--회원비회원-데이터-저장) 섹션으로 승격**, 그 결과 소셜 로그인·투명한 로컬 모드 고지 UI 2개 항목 신규 추가. **[같은 날] 소셜 로그인 서버 라우트(`POST /v1/auth/social`) 구현 완료** — 다만 로그인 UI가 없어 여전히 대기로 유지(아래 표 참고). 남은 5개(로그인 유도 시점·온보딩 업로드 흐름·소셜 로그인·투명 고지 UI·`updatedAt` 보류분)는 화면 결정 또는 신규 개발 필요해 대기 |
 | **`AI-PIPELINE`** | 🔴 스텁만 | BullMQ + LLM 연동 없음 |
 | **`PUSH-NOTIFICATION`** | 🔴 미완 | DB 테이블만 존재 |
 | **`NATIVE-APP`** | 🔴 미착수 | README 플레이스홀더만 |
@@ -297,7 +297,7 @@ sequenceDiagram
 |---|------|-----------|-----------|-----------|
 | `AUTH-SERVER` | **JWT 인증 구현** (서버) | `server/src/app.ts` → `resolveDevEmail()` 교체 | 실 유저 토큰 발급·검증, `ALLOW_DEV_AUTH` 플래그 제거 | 지금은 서버가 "가짜 개발용 이메일"로만 동작합니다 — 이 상태로는 실사용자를 단 한 명도 받을 수 없어 **출시 자체가 불가능**합니다 |
 | `AUTH-API` | **회원가입 / 로그인 API** | `server/src/` 신규 라우트 | `POST /v1/auth/signup`, `POST /v1/auth/login`, 리프레시 토큰 | 사용자가 "내 계정"을 만들 방법이 없으면 여러 기기에서 기록을 이어볼 수 없습니다 — 지금 앱은 사실상 기기 하나에 갇힌 메모장입니다 |
-| `AUTH-CLIENT` | **클라이언트 인증 플로우** | `src/app/lib/remindApi.ts` | Bearer 토큰 저장·갱신·만료 처리 | API만 있고 이게 없으면 로그인이 수시로 풀리거나 앱을 쓰다 갑자기 로그아웃되는 경험을 하게 됩니다 — 첫인상에서 신뢰를 잃는 지점 |
+| `AUTH-CLIENT` | **클라이언트 인증 플로우** | `src/app/lib/snattyApi.ts` | Bearer 토큰 저장·갱신·만료 처리 | API만 있고 이게 없으면 로그인이 수시로 풀리거나 앱을 쓰다 갑자기 로그아웃되는 경험을 하게 됩니다 — 첫인상에서 신뢰를 잃는 지점 |
 | `SECURITY-HARDENING` | **서버 보안 강화** | `server/src/app.ts`, `server/package.json` | 상시 보안 방어(코드) + 배포 전 체크리스트(배포 환경) 둘 다 완료 | 이게 없으면 악의적 트래픽에 서버가 다운되거나, 에러 메시지를 통해 내부 정보(DB 구조 등)가 새어나갈 수 있습니다 — 장애·평판 리스크 |
 
 근거: [부록 A](#부록-a--저장-흐름-병목-auth-근거) — `server/src/index.ts:106-141` DB 왕복 2회 문제. 실행용 상세 체크리스트: [부록 C](#부록-c--남은-마일스톤-실행-체크리스트).
@@ -325,7 +325,7 @@ sequenceDiagram
 | 태그 | 항목 | 파일·위치 | 완료 기준 | 왜 PM이 신경 써야 하는가 |
 |---|------|-----------|-----------|-----------|
 | `ACCESSIBILITY` | **접근성(a11y) 최소 세트** (7/8 완료, 2026-07-24) | 홈·피드·마이 전반 | 편집 오버레이 포커스 트랩(✓), Lighthouse Accessibility 통과(실기기 필요, 대기) | 시각·운동 장애가 있는 잠재 사용자를 처음부터 배제하게 됩니다. 일부 시장·B2B 채널에서는 접근성이 법적/계약 요건이기도 합니다 |
-| `SYNC-LIVE` | **서버 동기화 활성화** | `src/app/lib/remindApi.ts` | `AUTH` 완료 후 Bearer 토큰으로 실 서버 동기화 | 로그인 기능을 다 만들어도, 로그인 후 기기 간 기록이 안 보이면 "왜 로그인했지?"라는 의문만 남습니다 — `AUTH` 투자의 실제 효용이 여기서 결정됩니다 |
+| `SYNC-LIVE` | **서버 동기화 활성화** | `src/app/lib/snattyApi.ts` | `AUTH` 완료 후 Bearer 토큰으로 실 서버 동기화 | 로그인 기능을 다 만들어도, 로그인 후 기기 간 기록이 안 보이면 "왜 로그인했지?"라는 의문만 남습니다 — `AUTH` 투자의 실제 효용이 여기서 결정됩니다 |
 | `AI-PIPELINE` | **AI 파이프라인 구현** | `server/src/jobs/ai-queue.ts` | BullMQ + Redis 워커, LLM 연동 (Claude/GPT), `AiArtifact` 저장 | 이 제품을 "그냥 메모 앱"과 구분 짓는 핵심 차별화 요소입니다 — 없으면 회고/요약이라는 제품의 약속을 지킬 수 없습니다 |
 | `REFLECTION-UI` | **회고 카드 UI** | `src/app/feed/` 또는 신규 화면 | `AiArtifact` 데이터 피드에 노출 ([first-launch.md](./first-launch.md) 08 참고) | AI 파이프라인을 완성해도 사용자가 결과를 볼 화면이 없으면 그 투자 효과를 사용자가 전혀 체감하지 못합니다 |
 
@@ -379,11 +379,11 @@ sequenceDiagram
         │
         ├─▶ (동기, 체감 저장)
         │     1. saveRecord()            recordsStore.ts:186  (synced: false로 저장)
-        │     2. localStorage.setItem    key: remind-records-v1
+        │     2. localStorage.setItem    key: snatty-records-v1
         │     3. UI 즉시 해제            setIsEditing(false) / setShowReward(true)
         │
         └─▶ (비동기, best-effort — 실패해도 위 동기 경로엔 영향 없음)
-              4. postQuickEntry()               remindApi.ts:31  (clientMutationId: record.id 포함)
+              4. postQuickEntry()               snattyApi.ts:31  (clientMutationId: record.id 포함)
               5. POST /v1/entries/quick         X-Dev-Email 헤더 (dev 전용 인증)
               6. zod 검증 + user.upsert         server/src/app.ts:106  (2026-07-13: index.ts→app.ts 분리, 테스트 가능하게 buildApp()으로 추출)
               7. clientMutationId 멱등 upsert    server/src/app.ts:123-146
@@ -391,7 +391,7 @@ sequenceDiagram
               9. 성공 시 markRecordSynced()      page.tsx:182 / recordsStore.ts:222
 
 [재시도 경로(SYNC) — 앱 시작 시 + online 이벤트]  page.tsx:134-138
-   getUnsyncedRecords() → syncPendingRecords()   remindApi.ts:72
+   getUnsyncedRecords() → syncPendingRecords()   snattyApi.ts:72
    순차 처리, 첫 실패 시 중단(오프라인이면 나머지도 다음 기회로 미룸)
 ```
 
@@ -411,10 +411,10 @@ sequenceDiagram
 
 | 작업 | 수정 체인 |
 |---|---|
-| 기록에 새 필드 추가 | `src/types/journal.ts` → `recordsStore.ts` (타입 + validate + 스키마 버전↑) → `page.tsx` UI/state → `remindApi.ts` payload → `server/src/app.ts` zod 스키마 → `schema.prisma` → `prisma migrate dev` |
+| 기록에 새 필드 추가 | `src/types/journal.ts` → `recordsStore.ts` (타입 + validate + 스키마 버전↑) → `page.tsx` UI/state → `snattyApi.ts` payload → `server/src/app.ts` zod 스키마 → `schema.prisma` → `prisma migrate dev` |
 | 인증 방식 교체 (`AUTH`) | `server/src/app.ts`의 `resolveDevEmail()` 함수 하나만 교체. `index.ts`는 부트스트랩(프로덕션 가드 + `listen()`)만 담당하므로 건드릴 필요 없음 |
 | AI 요약/분석 파이프라인 연결 (`AI-PIPELINE`) | `server/src/jobs/ai-queue.ts`의 `enqueueAiJob()` stub을 BullMQ + Redis 구현으로 교체 (호출부는 그대로) |
-| 재시도 정책 조정(지수 백오프 등, `SYNC` 확장) | `remindApi.ts`의 `syncPendingRecords()` — 지금은 실패 시 즉시 중단 후 다음 트리거(앱 시작/`online`)까지 대기하는 단순 정책 |
+| 재시도 정책 조정(지수 백오프 등, `SYNC` 확장) | `snattyApi.ts`의 `syncPendingRecords()` — 지금은 실패 시 즉시 중단 후 다음 트리거(앱 시작/`online`)까지 대기하는 단순 정책 |
 | 모아보기(피드)에 새 표시 추가 | `recordsStore.ts`의 `getRecords()` 반환 타입 확인 → `feed/page.tsx`에서 렌더링 |
 
 ## 부록 B — Red UI 컴포넌트 후보 표 (`PROFILE-UI`, `EDITOR-UI` 근거)
@@ -530,23 +530,23 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 |---|---|---|---|
 | 기능 | `POST /v1/auth/signup`, `/login`, `/refresh`, `/logout` 4종 라우트 구현. **→ PM 참고:** 탈취된 토큰이 재사용되면 그 계정의 모든 기기에서 한 번에 로그아웃됩니다(보안 조치) — "갑자기 로그아웃됐어요" 문의가 오면 원인 후보 중 하나입니다 | 상 | ☑ 완료 (2026-07-14) — `server/src/app.ts` + `server/src/auth.ts`. bcryptjs 해시, refresh token 회전(rotation) + 재사용 탐지(reuse detection). 전략은 [`auth-token-strategy.md`](./auth-token-strategy.md). `server/src/app.test.ts` 9개 케이스로 검증(signup claim/409/유효성, login 통합 실패 메시지, refresh 회전/재사용 차단, logout) |
 | 기능 | `resolveDevEmail()` → JWT 검증 미들웨어로 교체, `ALLOW_DEV_AUTH` 플래그 완전 제거 | 상 | ☑ 완료 (2026-07-15) — `server/src/app.ts`의 `requireAuth` preHandler로 보호 라우트 4개 전부 교체. `index.ts`는 `ALLOW_DEV_AUTH` 대신 `JWT_SECRET` 필수 가드로 교체. `resolveDevEmail()` 함수 자체 삭제 |
-| 기능 | 클라이언트 토큰 저장·자동 갱신 로직 (`remindApi.ts`) | 상 | ☑ 완료 (2026-07-15) — access token은 모듈 스코프 변수(메모리)에만 보관, `authedFetch()`가 토큰 없을 때 조용히 refresh 시도 + 401 시 refresh 1회 재시도 후 원요청 재시도. 동시 요청 시 refresh 중복 실행 방지(`refreshInFlight` 공유). `session.ts`의 `logout()`에 토큰 초기화 연결 |
+| 기능 | 클라이언트 토큰 저장·자동 갱신 로직 (`snattyApi.ts`) | 상 | ☑ 완료 (2026-07-15) — access token은 모듈 스코프 변수(메모리)에만 보관, `authedFetch()`가 토큰 없을 때 조용히 refresh 시도 + 401 시 refresh 1회 재시도 후 원요청 재시도. 동시 요청 시 refresh 중복 실행 방지(`refreshInFlight` 공유). `session.ts`의 `logout()`에 토큰 초기화 연결 |
 | UX | 로그인 실패 메시지는 "이메일 또는 비밀번호가 올바르지 않습니다"로 통일 (계정 존재 여부를 노출하지 않음). **→ PM 참고:** 의도된 보안 설계입니다 — 고객지원·성장팀이 "이 이메일은 가입 안 되어있어요, 회원가입 하시겠어요?" 같은 안내를 하고 싶어도 로그인 화면에서는 계정 존재 여부를 알려줄 수 없습니다 | 상 | ☑ 완료 (2026-07-14) — `/v1/auth/login`에서 미가입 계정·오답 비밀번호 모두 동일 401 메시지. 타이밍 사이드채널 방지를 위해 미가입 계정도 더미 해시로 verify 수행(`dummyPasswordHash()`) |
 | UX | 토큰 만료 시 조용히 로그인 화면으로 유도 (세션 끊김을 오류로 오해하지 않게). **→ PM 참고:** 이 흐름을 어떻게 설계하느냐가 사용자가 세션 끊김을 "에러 났다"로 느낄지 "그냥 다시 로그인하면 되네"로 느낄지를 가릅니다 — UX 카피·화면 결정이 필요합니다 | 중 | ☐ 대기 |
 | 데이터 | 비밀번호는 Argon2/bcrypt 해시만 저장 — 평문 저장 코드가 어디에도 없는지 재확인 | 상 | ☑ 완료 (2026-07-13) — `password`/`비밀번호` 등으로 스키마·서버·클라이언트 전수 grep, 저장 코드 자체가 없음 확인(아직 signup 미구현이라 당연한 결과). 향후 구현 시 평문 저장을 막기 위해 [CLAUDE.md §5-1](../CLAUDE.md)에 "Argon2/bcrypt 해시로만 저장" 가드레일 규칙 신설 |
 | 데이터 | JWT 시크릿은 `.env`에만 — `NEXT_PUBLIC_` 노출·커밋 여부 확인 (CLAUDE.md §5-1) | 상 | ☑ 완료 (2026-07-13) — `JWT_SECRET`/`jsonwebtoken` grep 결과 코드에 아직 없음(JWT 미구현) 확인, `NEXT_PUBLIC_*`는 API URL·dev 이메일뿐 확인, `.env`류 git 추적 없음 재확인. 향후 구현을 대비해 `server/.env.example`에 `JWT_SECRET` 플레이스홀더 + 경고 주석 추가, [CLAUDE.md §5-1](../CLAUDE.md)에 "`NEXT_PUBLIC_` 접두사 금지" 가드레일 규칙 신설 |
 | 데이터 | 기존 `dev@local.invalid` 등 익명 계정에 쌓인 `JournalEntry`를 실사용자 계정으로 옮기는 마이그레이션 전략. **→ PM 참고:** 전략 문서만 있고 실행 여부는 아직 PM 결정 대기 상태입니다 — 개발 중 쌓인 테스트 데이터를 실사용자 계정으로 옮길지, 그냥 버릴지 정해야 다음 단계로 넘어갑니다 | 중 | ☑ 완료 (2026-07-13) — 전략 초안 작성: [`data-migration.md`](./data-migration.md). 로컬 미동기화 데이터 업로드(A)와 서버 dev-placeholder 재소유(B) 두 갈래로 분리, 실행 여부는 제품 결정 필요(문서 내 "열린 질문" 참고). 실제 마이그레이션 엔드포인트 구현은 JWT 도입 시점에 별도 작업 |
-| 예외처리 | **오프라인 재시도 큐(`SYNC`)가 401(토큰 만료)을 받으면 무한 재시도에 빠지지 않는지** — 지금은 실패 원인 구분 없이 그냥 중단하는데, 401은 "토큰 갱신 시도 → 실패 시 재로그인 유도"로 별도 분기 필요. **→ PM 참고:** 토큰이 만료돼도 저장하려던 기록이 사라지지 않고 다음 재로그인 때 다시 시도됩니다 — 사용자는 "왜 세션 끊겼지?"만 겪을 뿐 데이터를 잃지는 않습니다 | 상 | ☑ 완료 (2026-07-15) — `remindApi.ts`의 `authedFetch()`가 401을 받으면 refresh를 정확히 1회만 시도(반복문 아님, 구조적으로 무한루프 불가). 그래도 실패하면 그대로 에러를 던지고 `syncPendingRecords()`가 이를 잡아 중단(다음 기회로 미룸) — 기존 "첫 실패 시 중단" 정책 재사용 |
-| 예외처리 | 여러 탭에서 동시에 토큰 갱신 시 경합 (refresh rotation 사용 시 한쪽 refresh token이 무효화될 수 있음) | 중 | ☑ 완료 (2026-07-16) — `remindApi.ts`의 `refreshAccessToken()`을 Web Locks API(`navigator.locks.request`)로 감싸 탭 간 refresh 요청을 직렬화. 먼저 락을 잡은 탭의 요청·쿠키 회전이 끝난 뒤에야 다음 탭의 요청이 나가므로, 두 번째 탭은 이미 회전된 최신 쿠키로 자연스럽게 요청 — 재사용 탐지가 정상 동시 갱신을 공격으로 오인하는 경로 자체가 사라짐. `navigator.locks` 미지원 환경은 기존 동작(직렬화 없음)으로 폴백. **정정(2026-07-18)**: "이미 배포된 코드의 실제 결함"처럼 서술했지만, 실제로는 로그인 UI 자체가 아직 없어 지금 이 경합을 실제로 겪을 사용자가 없음 — 코드는 작고 정확해 유지하되, 긴급도는 실제보다 부풀려져 있었음(로그인 UI가 붙기 전에 미리 막아둔 방어선) |
+| 예외처리 | **오프라인 재시도 큐(`SYNC`)가 401(토큰 만료)을 받으면 무한 재시도에 빠지지 않는지** — 지금은 실패 원인 구분 없이 그냥 중단하는데, 401은 "토큰 갱신 시도 → 실패 시 재로그인 유도"로 별도 분기 필요. **→ PM 참고:** 토큰이 만료돼도 저장하려던 기록이 사라지지 않고 다음 재로그인 때 다시 시도됩니다 — 사용자는 "왜 세션 끊겼지?"만 겪을 뿐 데이터를 잃지는 않습니다 | 상 | ☑ 완료 (2026-07-15) — `snattyApi.ts`의 `authedFetch()`가 401을 받으면 refresh를 정확히 1회만 시도(반복문 아님, 구조적으로 무한루프 불가). 그래도 실패하면 그대로 에러를 던지고 `syncPendingRecords()`가 이를 잡아 중단(다음 기회로 미룸) — 기존 "첫 실패 시 중단" 정책 재사용 |
+| 예외처리 | 여러 탭에서 동시에 토큰 갱신 시 경합 (refresh rotation 사용 시 한쪽 refresh token이 무효화될 수 있음) | 중 | ☑ 완료 (2026-07-16) — `snattyApi.ts`의 `refreshAccessToken()`을 Web Locks API(`navigator.locks.request`)로 감싸 탭 간 refresh 요청을 직렬화. 먼저 락을 잡은 탭의 요청·쿠키 회전이 끝난 뒤에야 다음 탭의 요청이 나가므로, 두 번째 탭은 이미 회전된 최신 쿠키로 자연스럽게 요청 — 재사용 탐지가 정상 동시 갱신을 공격으로 오인하는 경로 자체가 사라짐. `navigator.locks` 미지원 환경은 기존 동작(직렬화 없음)으로 폴백. **정정(2026-07-18)**: "이미 배포된 코드의 실제 결함"처럼 서술했지만, 실제로는 로그인 UI 자체가 아직 없어 지금 이 경합을 실제로 겪을 사용자가 없음 — 코드는 작고 정확해 유지하되, 긴급도는 실제보다 부풀려져 있었음(로그인 UI가 붙기 전에 미리 막아둔 방어선) |
 | 예외처리 | 로그인 엔드포인트에 rate limiting (브루트포스 방어) | 상 | ☑ 완료 (2026-07-14) — `/v1/auth/login`에 `@fastify/rate-limit` 라우트별 오버라이드로 5req/분 적용(전역 100req/분보다 낮음) |
-| 예외처리 | 토큰은 XSS에 안전한 저장소 사용 (`httpOnly` 쿠키 권장, `localStorage` 노출 위험 검토) | 상 | ☑ 완료 (2026-07-14) — 결정 및 서버 구현: access token은 응답 바디로만(클라이언트는 메모리 보관 예정), refresh token은 `httpOnly; Secure(prod); SameSite=Lax` 쿠키(웹) + 바디(네이티브 대비) 병행. 상세: [`auth-token-strategy.md`](./auth-token-strategy.md). 클라이언트(`remindApi.ts`)의 메모리 보관·자동 갱신 로직은 아직 대기(§AUTH-CLIENT) |
+| 예외처리 | 토큰은 XSS에 안전한 저장소 사용 (`httpOnly` 쿠키 권장, `localStorage` 노출 위험 검토) | 상 | ☑ 완료 (2026-07-14) — 결정 및 서버 구현: access token은 응답 바디로만(클라이언트는 메모리 보관 예정), refresh token은 `httpOnly; Secure(prod); SameSite=Lax` 쿠키(웹) + 바디(네이티브 대비) 병행. 상세: [`auth-token-strategy.md`](./auth-token-strategy.md). 클라이언트(`snattyApi.ts`)의 메모리 보관·자동 갱신 로직은 아직 대기(§AUTH-CLIENT) |
 | 예외처리 | 이미 로컬 큐에 쌓여있던 미동기화 기록이 새 인증 체계에서도 정상 전송되는지 하위호환 테스트 | 중 | ☑ 완료 (2026-07-22) — **정정**: "배포 시점에"라고 돼 있었지만 실제로는 배포와 무관 — `syncPendingRecords()`가 필요로 하는 건 메모리상의 `accessToken`뿐이라 로그인 UI 없이도 로컬에서 검증 가능함을 확인. `server/src/app.test.ts`에 테스트 2건 추가: 날씨 스냅샷 포함 큐 기록이 Bearer 인증으로 정상 전송되는지, 재시도로 두 번 전송돼도 `clientMutationId` 멱등 처리로 중복 생성 안 되는지(fake Prisma 기반, 실 Postgres 연동은 `docker compose up -d` 후 별도 확인 권장) |
 
 ### SYNC-LIVE — 서버 동기화 활성화 (실사용자 연결)
 
 | 구분 | 체크 항목 | 중요도 | 완료 여부 |
 |---|---|---|---|
-| 기능 | `remindApi.ts`의 `X-Dev-Email` 헤더 → `Authorization: Bearer` 교체 | 상 | ☑ 완료 (2026-07-15) — `AUTH` 마일스톤 "클라이언트 토큰 저장·자동 갱신" 작업의 일부로 이미 완료. `remindApi.ts`에서 `X-Dev-Email`·`getCurrentIdentity()` 참조 완전 삭제, `authedFetch()`가 `Authorization: Bearer`만 사용. 같은 변경이 `AUTH` 섹션에는 반영됐지만 이 줄은 갱신이 안 돼 있던 걸 2026-07-16에 발견해 정정 |
+| 기능 | `snattyApi.ts`의 `X-Dev-Email` 헤더 → `Authorization: Bearer` 교체 | 상 | ☑ 완료 (2026-07-15) — `AUTH` 마일스톤 "클라이언트 토큰 저장·자동 갱신" 작업의 일부로 이미 완료. `snattyApi.ts`에서 `X-Dev-Email`·`getCurrentIdentity()` 참조 완전 삭제, `authedFetch()`가 `Authorization: Bearer`만 사용. 같은 변경이 `AUTH` 섹션에는 반영됐지만 이 줄은 갱신이 안 돼 있던 걸 2026-07-16에 발견해 정정 |
 | 기능 | **`GET /v1/entries` 목록 조회 엔드포인트 구현** (신규 항목, 2026-07-16 추가) — 인증된 사용자의 `JournalEntry` 목록을 `deleted:false`만 필터링해 반환. 지금까지 서버엔 생성(`POST .../quick`)·삭제(`DELETE .../:id`)만 있고 **조회 자체가 아예 없어서** 모아보기가 로컬 데이터만 볼 수 있는 근본 원인. 나머지 SYNC-LIVE 항목(온보딩 업로드, 병합 전략 등) 대부분이 이 라우트를 전제로 함 | 상 | ☑ 완료 (2026-07-22) — `server/src/app.ts`에 구현, `userId`+`deleted:false` 필터링·최신순 정렬. 리뷰 중 "페이지네이션이 빠져있다"는 지적에 커서 기반 페이징은 과잉설계 방지 차원에서 보류하고 `take: 500` 상한만 추가. `server/src/app.test.ts` 테스트 4건 추가(인증 없이 401, 본인 소유·미삭제만 반환, 타인 기록 비노출, 550건 시딩 시 최신 500건까지만 반환) |
 | 데이터 | `updatedAt` 기반 증분 동기화(`?since=`) 지원 (2026-07-17 추가, 2026-07-18 재분류) — `JournalEntry.updatedAt`은 스키마에 이미 있고 Prisma가 자동 관리하지만, 실제로 이 값을 읽어 쓰는 코드가 어디에도 없음. **정정**: 애초 "처음부터 만들어야 재작업이 없다"는 논리 자체가 검증되지 않은 미래 최적화였음 — 사용자 1명당 엔트리 수가 적은 지금은 `GET /v1/entries`가 전체를 반환해도 성능 문제가 없고, 실제로 몇백~몇천 건이 쌓여 필요성이 확인된 뒤에 착수해도 늦지 않음. 아래 `GET /v1/entries`(전체 목록)와 분리해 우선순위를 낮춤 | 중 (필요성 확인 전 착수 보류) | ☐ 대기 |
 | 기능 | 비로그인 상태에서도 로컬 전용 모드를 유지할지 정책 결정. **→ PM 참고:** 로그인을 강제할지, 로그인 없이도 계속 쓸 수 있게 둘지는 순수 제품 결정입니다 — 이게 정해져야 온보딩·가입 유도 전략을 짤 수 있습니다 | 중 | ⚠️ **[2026-08-14 재검토로 폐기]** ~~완료 (2026-07-22) — 결정: "일단은 항상 유지"~~ — 이 결정이 사용자 실시간 승인인지 문서만으론 불명확한 채 방치돼 실제로 사용자 오해를 유발함(배포판 사용 중 "로그인 필수 정책인가?"로 문의). **Product Owner가 외부 보고서 근거로 직접 재검토·승인한 새 정책은 최상단 [계정 정책](#계정-정책--회원비회원-데이터-저장) 섹션 참고 — 새 계정 정책으로 전환** |
@@ -556,7 +556,7 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 | 기능 | Apple/Google 소셜 로그인 추가 (신규, 2026-08-14 추가). **→ PM 참고:** 지금은 이메일/비밀번호만 가능해서 가입 자체가 번거로움 — 1-Tap 소셜 로그인이 있어야 "맥락 기반 가입 유도" 팝업에서 실제로 즉시 전환이 일어남 | 중 | ☐ 대기 (서버만 완료) — **[2026-08-14]** `POST /v1/auth/social` 서버 라우트 구현 완료(`server/src/app.ts`, `server/src/socialAuth.ts`, 오프라인 테스트 4건). `jsonwebtoken`+`jwks-rsa`로 identityToken을 provider JWKS 공개키에 대해 서명·`aud`·`iss` 검증하고 `signup`의 기존 claim 패턴을 재사용 — 스키마 변경 없음(`User.passwordHash`가 이미 nullable). **여전히 대기인 이유**: (1) 로그인 화면·버튼 등 클라이언트 UI가 이 앱에 아예 없어 호출할 진입점이 없음, (2) Apple/Google 개발자 콘솔에 앱을 등록해 `GOOGLE_CLIENT_ID`/`APPLE_CLIENT_ID`를 발급받기 전까진 라우트가 503만 반환 |
 | 데이터 | 로컬 `StoredRecord` ↔ 서버 `JournalEntry` 최초 동기화 병합 전략 (다중 기기 사용 시나리오) | 상 | ☑ 완료 (2026-07-22) — **결정: "병합 충돌은 구조적으로 발생하지 않으며, 두 기기의 기록 모두 독립 레코드로 안전하게 보존된다."** `JournalEntry.body`는 append-only(수정 불가)라 "같은 기록을 두 기기가 다르게 수정"하는 시나리오 자체가 이 데이터 모델에선 불가능하고, 각 기록은 `clientMutationId`로 고유 식별되는 독립 엔트리라 두 기기의 기록은 그냥 나란히 생성될 뿐 덮어쓸 대상이 없음. 단일 기기 케이스는 [`data-migration.md` §2](./data-migration.md)에 이미 구체화된 `clientMutationId` 기반 멱등 업로드로 이미 충분 — 추가 코드 불필요. **[정정]** 이전엔 이 항목의 근거로 같은 문서 §5 "열린 질문"을 인용했었는데, §5는 실제로는 dev-placeholder 계정의 기기별 재소유 문제를 다루는 것으로 이것과는 다른 주제였음 — 잘못된 인용이었음. **→ PM 참고:** "최신 것만 승자(오래된 것 버림)"를 문자 그대로 구현했다면 유효한 일기 기록을 삭제하는 버그가 됐을 것 — 검토 과정에서 확인해 채택하지 않음 |
 | 데이터 | 대량 초기 업로드에도 기존 `clientMutationId` 멱등 처리(`SYNC`)가 그대로 재사용되는지 확인 | 중 | ☑ 완료 (2026-07-22) — 서로 다른 `clientMutationId` 20건 순차 업로드 + 같은 배치 재전송(연결 끊김 재현) 테스트로 확인, 서버 코드 변경 없이 기존 멱등 로직이 그대로 재사용됨(`server/src/app.test.ts`) |
-| 예외처리 | 대량 업로드 중 일부 실패 시 전체 롤백 대신 실패 건만 재시도 큐에 남기기. **→ PM 참고:** 온보딩 업로드 중 일부가 실패해도 나머지 기록은 안전하게 저장된다는 뜻입니다 — "업로드 중 하나라도 실패하면 전부 날아간다"는 최악의 시나리오를 막는 항목입니다. 다만 그 실패 건이 오래 안 고쳐지면 그보다 오래된 기록들의 동기화도 함께 지연됩니다 | 상 | ☑ 완료 (2026-07-22, 실제 통합 테스트로 검증) — 최초엔 코드만 읽고 완료 처리했으나 "코드만 읽은 건 검증이 아니다"라는 지적에 따라, 실제 클라이언트 코드(`recordsStore.ts`·`remindApi.ts`, 무수정)를 esbuild로 번들링해 실제 서버(fake Prisma)에 진짜 HTTP 요청을 보내는 통합 테스트로 재검증. 5건 중 3번째를 일부러 실패시키자 앞 2건은 유지·재전송 없음·수정 후 재개까지 확인 — 롤백·중복 없음은 확인됨. **⚠ 실행 중 발견한 caveat**: `syncPendingRecords()`는 최신순으로 순회하다 실패 시 `return`으로 전체를 멈추므로, 실패 건 하나가 아니라 그보다 오래된 모든 미동기화 기록이 그 건이 해결되기 전까지 함께 막힘(데이터 유실은 아니지만 항목 문구보다 영향 범위가 넓음, 지금 당장 고칠지는 별도 결정 필요) — 이 caveat은 `SYNC` 마일스톤에 신규 항목으로 교차 반영 |
+| 예외처리 | 대량 업로드 중 일부 실패 시 전체 롤백 대신 실패 건만 재시도 큐에 남기기. **→ PM 참고:** 온보딩 업로드 중 일부가 실패해도 나머지 기록은 안전하게 저장된다는 뜻입니다 — "업로드 중 하나라도 실패하면 전부 날아간다"는 최악의 시나리오를 막는 항목입니다. 다만 그 실패 건이 오래 안 고쳐지면 그보다 오래된 기록들의 동기화도 함께 지연됩니다 | 상 | ☑ 완료 (2026-07-22, 실제 통합 테스트로 검증) — 최초엔 코드만 읽고 완료 처리했으나 "코드만 읽은 건 검증이 아니다"라는 지적에 따라, 실제 클라이언트 코드(`recordsStore.ts`·`snattyApi.ts`, 무수정)를 esbuild로 번들링해 실제 서버(fake Prisma)에 진짜 HTTP 요청을 보내는 통합 테스트로 재검증. 5건 중 3번째를 일부러 실패시키자 앞 2건은 유지·재전송 없음·수정 후 재개까지 확인 — 롤백·중복 없음은 확인됨. **⚠ 실행 중 발견한 caveat**: `syncPendingRecords()`는 최신순으로 순회하다 실패 시 `return`으로 전체를 멈추므로, 실패 건 하나가 아니라 그보다 오래된 모든 미동기화 기록이 그 건이 해결되기 전까지 함께 막힘(데이터 유실은 아니지만 항목 문구보다 영향 범위가 넓음, 지금 당장 고칠지는 별도 결정 필요) — 이 caveat은 `SYNC` 마일스톤에 신규 항목으로 교차 반영 |
 | 예외처리 | **로그아웃/재로그인(다른 계정) 시 `memoryCache`·로컬 데이터를 무효화해 이전 계정 기록이 새 계정에 노출되지 않는지** — 개인정보 유출 등급 이슈 | 상 | ☑ 완료 (2026-07-13) — [`src/app/lib/session.ts`](../src/app/lib/session.ts) 신설. `ensureIdentityConsistency()`가 마지막으로 로컬 데이터를 채운 identity와 현재 identity를 비교해 다르면 `clearAllRecords()` + `invalidateRecordsCache()`로 즉시 무효화. `logout()`/`loginAs()`로 명시적 진입점도 제공. `page.tsx`·`feed/page.tsx`의 기록 조회 시점(마운트·포커스)마다 호출되도록 연결. 최초 실행(마커 없음)은 무효화하지 않아 기존 로컬 전용 데이터를 첫 실행에 날리지 않음 |
 
 ---
@@ -684,7 +684,7 @@ Figma에서 대응 컴포넌트 노드를 확정하면 아래 표의 **비고** 
 배포할 때마다 이 순서로 확인합니다. [배포 전 체크리스트](#배포-전-체크리스트) 5개 항목이 이 3단계 안에 다 들어갑니다.
 
 1. **접근 제어 확인** — 서버가 뜬 직후 바로:
-   - `JWT_SECRET` 가드: 배포 플랫폼(Railway 등) 로그에 `[remind-api] FATAL: JWT_SECRET is not set` 메시지가 없는지, `curl -I https://<prod-domain>/health`가 200을 반환하는지 확인 — 값이 없으면 코드가 기동 자체를 막으므로(`server/src/index.ts`) 이 호출이 아예 실패하는 것 자체가 신호.
+   - `JWT_SECRET` 가드: 배포 플랫폼(Railway 등) 로그에 `[snatty-api] FATAL: JWT_SECRET is not set` 메시지가 없는지, `curl -I https://<prod-domain>/health`가 200을 반환하는지 확인 — 값이 없으면 코드가 기동 자체를 막으므로(`server/src/index.ts`) 이 호출이 아예 실패하는 것 자체가 신호.
    - `CORS_ORIGIN`: `curl -I -H "Origin: https://evil-test.example" https://<prod-domain>/health`로 호출해, 응답에 `Access-Control-Allow-Origin: https://evil-test.example`처럼 임의 도메인이 그대로 반사되지 않는지 확인(운영 도메인 요청에서만 그 값이 붙어야 정상).
 2. **통신 보안 확인** — `curl -I https://<prod-domain>/health`로 `Strict-Transport-Security` 헤더가 찍히는지, 프록시(Railway 등) 뒤에서도 헤더가 그대로 전달되는지 확인.
 3. **로그 확인** — 실사용자 요청이 몇 건 쌓인 뒤 배포 플랫폼의 로그 뷰어에서: `LOG_LEVEL`로 지정한 레벨대로 나가고 있는지(2026-07-21부터 `server/src/app.ts`에서 명시 제어), 실제 로그 샘플의 `req`/`res` 항목에 `authorization`·`cookie`·`set-cookie`가 원본 값이 아니라 `[REDACTED]`로 찍히는지(`REQUEST_LOG_REDACT`, 같은 날 추가) 직접 열어서 확인.

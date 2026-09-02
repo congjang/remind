@@ -70,7 +70,7 @@ export async function verifySocialIdentityToken(
   const clientId = process.env[config.clientIdEnv];
   if (!clientId) {
     throw new SocialAuthConfigError(
-      `[remind-api] ${config.clientIdEnv} is not set — see server/.env.example`,
+      `[snatty-api] ${config.clientIdEnv} is not set — see server/.env.example`,
     );
   }
 

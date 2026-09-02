@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 
 FILE="${1:-}"
 if [ -z "$FILE" ]; then
-  echo "사용법: ./scripts/restore-db.sh <backups/remind-db-YYYYMMDDTHHMMSSZ.dump>" >&2
+  echo "사용법: ./scripts/restore-db.sh <backups/snatty-db-YYYYMMDDTHHMMSSZ.dump>" >&2
   exit 1
 fi
 if [ ! -f "$FILE" ]; then

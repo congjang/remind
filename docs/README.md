@@ -1,4 +1,4 @@
-# remind-app 문서 지도
+# snatty-app 문서 지도
 
 문서를 찾을 때는 여기서 시작하세요. 아래는 실제 위계입니다.
 
@@ -33,7 +33,7 @@ docs/
 
 ## 다른 곳의 문서
 
-- [server/README.md](../server/README.md) — `remind-api` 로컬 실행, Next.js 프론트엔드 연결
+- [server/README.md](../server/README.md) — `snatty-api` 로컬 실행, Next.js 프론트엔드 연결
 - [native/README.md](../native/README.md) — 네이티브 앱 자리 표시자
 - [src/icons/ICONS-REVIEW.md](../src/icons/ICONS-REVIEW.md) — 아이콘 Figma↔코드 매핑
 - [variable_plugin_JSON/README.md](../variable_plugin_JSON/README.md) — deprecated 토큰 경로 안내
@@ -47,7 +47,7 @@ md가 아니라 Claude Code 아티팩트로만 존재하는 시각 자료입니�
 - [계정 정책](https://claude.ai/code/artifact/5bb65428-fca6-4e11-83c3-71aaefc9cdc2) — `PROGRESS_CHECKLIST.md`의 [계정 정책](./PROGRESS_CHECKLIST.md#계정-정책--회원비회원-데이터-저장) 섹션을 시각화. 비회원 로컬 저장 정책 전환 결정(Product Owner 승인, 2026-08-14), 4단계 전환 흐름, 소셜 로그인 UX 흐름(Mermaid), 회원 등급별 기능 격차 프레임워크
 - [통합 프로덕트 플로우차트](https://claude.ai/code/artifact/c9440ba9-dfef-45ef-bcce-f72d78eb32f7) — 저장/로그아웃/삭제 3개 핵심 로직을 UX·로직·데이터 레이어로 그린 기술 지도(Mermaid `sequenceDiagram`·`graph TD`), 위험 구간 표시
 - [유저플로우 · 정보 위계(IA) · 데이터 구조(ERD)](https://claude.ai/code/artifact/8a7e9de0-96dc-4a20-a1f5-51b8f610b74f) — 기록하기·모아보기·마이 행동 흐름, Figma IA 대조 기반 정보 위계 트리, `STORED_RECORD`/`JOURNAL_ENTRY` 중심 ERD
-- [이용약관](https://claude.ai/code/artifact/f73a98db-af7d-485f-a0ba-6dc0461e62d0) · [개인정보처리방침](https://claude.ai/code/artifact/fc87268b-7ee7-4e85-9c86-30a4c7e09c20) — **법률 검토 전 초안**. 일반 조항 + REMIND 특화 조항(기록 불변성·로컬 저장·위치정보 미저장 등). `[대괄호]` 플레이스홀더(운영자 정보 등)는 실제 값으로 교체 필요
+- [이용약관](https://claude.ai/code/artifact/f73a98db-af7d-485f-a0ba-6dc0461e62d0) · [개인정보처리방침](https://claude.ai/code/artifact/fc87268b-7ee7-4e85-9c86-30a4c7e09c20) — **법률 검토 전 초안**. 일반 조항 + SNATTY 특화 조항(기록 불변성·로컬 저장·위치정보 미저장 등). `[대괄호]` 플레이스홀더(운영자 정보 등)는 실제 값으로 교체 필요
 
 ## 원칙
 

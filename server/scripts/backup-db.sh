@@ -23,7 +23,7 @@ BACKUP_DIR="${BACKUP_DIR:-./backups}"
 mkdir -p "$BACKUP_DIR"
 
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-OUT_FILE="$BACKUP_DIR/remind-db-${TIMESTAMP}.dump"
+OUT_FILE="$BACKUP_DIR/snatty-db-${TIMESTAMP}.dump"
 
 echo "[backup-db] pg_dump 시작 → $OUT_FILE"
 pg_dump --format=custom --file="$OUT_FILE" "$DATABASE_URL"
@@ -32,4 +32,4 @@ echo "[backup-db] 완료 — $(du -h "$OUT_FILE" | cut -f1)"
 # 최근 KEEP_COUNT개만 로컬에 남기고 오래된 백업 정리(기본 14개 — 매일 1회면 약 2주치).
 KEEP_COUNT="${KEEP_COUNT:-14}"
 # shellcheck disable=SC2012
-ls -1t "$BACKUP_DIR"/remind-db-*.dump 2>/dev/null | tail -n +$((KEEP_COUNT + 1)) | xargs -r rm -f
+ls -1t "$BACKUP_DIR"/snatty-db-*.dump 2>/dev/null | tail -n +$((KEEP_COUNT + 1)) | xargs -r rm -f

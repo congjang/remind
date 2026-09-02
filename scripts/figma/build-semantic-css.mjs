@@ -8,21 +8,21 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   DESIGN_TOKENS_ROOT,
-  REMIND_APP_ROOT,
+  SNATTY_APP_ROOT,
 } from "./tokenRoot.mjs";
 
-const CACHE = path.join(REMIND_APP_ROOT, ".cache/figma/raw/tokens.json");
+const CACHE = path.join(SNATTY_APP_ROOT, ".cache/figma/raw/tokens.json");
 const PRIMITIVES_OUT = path.join(
   DESIGN_TOKENS_ROOT,
   "css/design-tokens.css",
 );
 const LOCAL_PRIMITIVES_OUT = path.join(
-  REMIND_APP_ROOT,
+  SNATTY_APP_ROOT,
   "src/app/design-tokens/primitives.css",
 );
 const GRID_PACKAGE_OUT = path.join(DESIGN_TOKENS_ROOT, "css/grid.css");
 const SEMANTIC_OUT = path.join(
-  REMIND_APP_ROOT,
+  SNATTY_APP_ROOT,
   "src/app/design-tokens/semantic.css",
 );
 
@@ -419,7 +419,7 @@ async function main() {
     const typoLines = typographyToCssVars(typoMobile, fsMap, fwMap);
 
     const header = `/**
- * Remind — Figma 시맨틱 (sementic.light + typography.mobile), 글로벌 프리미티브 var 참조
+ * Snatty — Figma 시맨틱 (sementic.light + typography.mobile), 글로벌 프리미티브 var 참조
  * 생성: npm run tokens:build:semantic-css
  * 소스: .cache/figma/raw/tokens.json
  */

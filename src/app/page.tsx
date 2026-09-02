@@ -12,7 +12,7 @@ import { EmotionIcon } from "./components/EmotionIcon";
 import { FunctionalIcon } from "./components/FunctionalIcon";
 import { ToastMessage } from "./components/ToastMessage";
 import type { EmotionIconName } from "../icons";
-import { postQuickEntry, syncPendingRecords } from "./lib/remindApi";
+import { postQuickEntry, syncPendingRecords } from "./lib/snattyApi";
 import {
   formatRecordHeadlineTemplate,
   pickRandomHeadlineTemplateIndex,
@@ -178,7 +178,7 @@ export default function Home() {
     refreshSavedRecordCount();
     const onFocus = () => refreshSavedRecordCount();
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "remind-records-v1" || e.key === null)
+      if (e.key === "snatty-records-v1" || e.key === null)
         refreshSavedRecordCount();
     };
     window.addEventListener("focus", onFocus);
@@ -234,7 +234,7 @@ export default function Home() {
     if (!record.persisted) {
       // 로컬 저장 자체가 실패 — 서버 동기화를 시도할 필요도 없고(어차피 다시 저장돼도
       // 다음 새로고침에 사라짐), "저장 성공" 리워드 화면을 보여주면 안 됨(실제로는 유실).
-      console.warn("[remind] localStorage 쓰기 실패 — 기록이 저장되지 않았습니다");
+      console.warn("[snatty] localStorage 쓰기 실패 — 기록이 저장되지 않았습니다");
       setIsSaving(false);
       setLocalSaveFailed(true);
       setToastVisible(true);
@@ -266,7 +266,7 @@ export default function Home() {
         });
         await markRecordSynced(record.id);
       } catch (e) {
-        console.warn("[remind] 서버 동기화 실패(로컬 저장은 완료)", e);
+        console.warn("[snatty] 서버 동기화 실패(로컬 저장은 완료)", e);
         setSaveError(true);
         setToastVisible(true);
         if (toastTimeoutRef.current !== null) {

@@ -2,13 +2,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: remind
-      POSTGRES_PASSWORD: remind
-      POSTGRES_DB: remind
+      POSTGRES_USER: snatty
+      POSTGRES_PASSWORD: snatty
+      POSTGRES_DB: snatty
     ports:
       - "5432:5432"
     volumes:
-      - remind_pg_data:/var/lib/postgresql/data
+      - snatty_pg_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
@@ -16,4 +16,4 @@ services:
       - "6379:6379"
 
 volumes:
-  remind_pg_data:
+  snatty_pg_data:

@@ -1,4 +1,4 @@
-# remind-api (Phase 1)
+# snatty-api (Phase 1)
 
 Fastify + Prisma + PostgreSQL. Auth is JWT-based (`Authorization: Bearer`) — see `docs/auth-token-strategy.md`.
 
@@ -67,7 +67,7 @@ Real user credentials and journal entries live here now, so this isn't optional.
 
 ```bash
 npm run db:backup            # pg_dump to ./backups (gitignored), keeps last 14 by default
-npm run db:restore -- ./backups/remind-db-<timestamp>.dump
+npm run db:restore -- ./backups/snatty-db-<timestamp>.dump
 ```
 
 - Requires `pg_dump`/`pg_restore` on the machine running the script (`brew install libpq` on macOS, `apt install postgresql-client` on Debian/Ubuntu). Reads `DATABASE_URL` from `.env` if not already set in the environment.
@@ -77,10 +77,10 @@ npm run db:restore -- ./backups/remind-db-<timestamp>.dump
 
 ## Connecting the Next.js frontend
 
-With `remind-api` running, create `.env.local` in the project root:
+With `snatty-api` running, create `.env.local` in the project root:
 
 ```bash
-NEXT_PUBLIC_REMIND_API_URL=http://127.0.0.1:4000
+NEXT_PUBLIC_SNATTY_API_URL=http://127.0.0.1:4000
 NEXT_PUBLIC_DEV_EMAIL=you@example.com
 ```
 

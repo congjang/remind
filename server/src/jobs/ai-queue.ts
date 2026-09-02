@@ -14,6 +14,6 @@ export type EnqueueAiJobParams = {
 /** Stub: log only. Replace with queue.add(...) when BullMQ is configured. */
 export function enqueueAiJob(params: EnqueueAiJobParams): void {
   if (process.env.NODE_ENV !== "production") {
-    console.info("[remind-api][ai-queue] stub enqueue", params);
+    console.info("[snatty-api][ai-queue] stub enqueue", params);
   }
 }

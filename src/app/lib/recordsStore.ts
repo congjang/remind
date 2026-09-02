@@ -13,7 +13,7 @@
  *       과거엔 재시도 자체가 없었으므로 안전한 기본값).
  */
 const CURRENT_SCHEMA_VERSION = 2;
-const META_KEY = "remind-records-meta-v1";
+const META_KEY = "snatty-records-meta-v1";
 
 type StoreMeta = {
   schemaVersion: number;
@@ -110,11 +110,37 @@ export type StoredRecord = {
   synced?: boolean;
 };
 
-const STORAGE_KEY = "remind-records-v1";
+const STORAGE_KEY = "snatty-records-v1";
+
+/**
+ * 2026-08-14 서비스명 개편(remind → snatty)으로 localStorage 키가 바뀜.
+ * 새 키가 비어있고 예전 키에 데이터가 남아있으면 1회 그대로 옮겨온 뒤 예전 키는 지운다 —
+ * CLAUDE.md §5-2(localStorage 키 변경 시 마이그레이션 로직 필수) 준수. 실패해도 이후
+ * readRaw()가 그냥 빈 배열로 안전하게 폴백하므로 데이터가 깨지지는 않는다.
+ */
+const LEGACY_STORAGE_KEY = "remind-records-v1";
+const LEGACY_META_KEY = "remind-records-meta-v1";
 
 function isBrowser() {
   return typeof window !== "undefined";
 }
+
+function migrateLegacyServiceNameKeys() {
+  if (!isBrowser()) return;
+  try {
+    if (window.localStorage.getItem(STORAGE_KEY) !== null) return; // 이미 마이그레이션됨 또는 신규 사용자
+    const legacyRecords = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyRecords === null) return; // 옮길 예전 데이터 없음
+    window.localStorage.setItem(STORAGE_KEY, legacyRecords);
+    const legacyMeta = window.localStorage.getItem(LEGACY_META_KEY);
+    if (legacyMeta !== null) window.localStorage.setItem(META_KEY, legacyMeta);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_META_KEY);
+  } catch {
+    // ignore
+  }
+}
+migrateLegacyServiceNameKeys();
 
 function validateRecord(item: unknown): item is StoredRecord {
   if (typeof item !== "object" || item === null) return false;
@@ -203,13 +229,13 @@ export function getRecords(): StoredRecord[] {
 /**
  * 읽기(현재 상태 확인) → 병합 → 쓰기를 탭 간에 원자적으로 실행한다.
  * localStorage는 탭마다 별도 JS 스레드에서 동작해 "읽고 쓰는 사이"에 다른 탭이 끼어들면
- * 배열 전체를 덮어쓰는 writeRaw() 특성상 그 탭의 기록이 사라질 수 있다 — remindApi.ts의
+ * 배열 전체를 덮어쓰는 writeRaw() 특성상 그 탭의 기록이 사라질 수 있다 — snattyApi.ts의
  * refresh token 탭 경합과 같은 클래스의 문제라 같은 해법(Web Locks API)을 재사용한다.
  * 지원 안 하는 환경(구형 브라우저)에서는 락 없이 그대로 실행(기존 동작으로 폴백).
  */
 async function withRecordsLock<T>(fn: () => T): Promise<T> {
   if (isBrowser() && "locks" in navigator) {
-    return await navigator.locks.request("remind-records-write", () => fn());
+    return await navigator.locks.request("snatty-records-write", () => fn());
   }
   return fn();
 }

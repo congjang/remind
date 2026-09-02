@@ -1,4 +1,4 @@
-# CLAUDE.md — remind-app 프로젝트 규칙
+# CLAUDE.md — snatty-app 프로젝트 규칙
 
 > 이 파일은 Claude Code가 이 레포에서 작업할 때 항상 따르는 규칙입니다.
 
@@ -6,7 +6,7 @@
 
 ## 1. 프로젝트 개요
 
-- **앱명:** remind-app (마이크로 저널링 앱)
+- **앱명:** snatty-app (마이크로 저널링 앱)
 - **플랫폼:** Next.js 16 (웹) + Fastify API 서버 (`server/`) + 미래 네이티브 (`native/`)
 - **주요 기술:** Next.js 16 App Router, React 19, Tailwind CSS 4, TypeScript 5 strict, Prisma 6, Fastify 5, Framer Motion 12
 - **베이스 해상도:** 모바일 우선 — 390px 기준, 744px 태블릿 대응
@@ -46,7 +46,7 @@ style={{ color: '#046253' }}
 
 - React hooks만 사용 (useState, useCallback, useEffect, useMemo)
 - 전역 상태 라이브러리(Redux, Zustand 등) 신규 도입 금지
-- 로컬 영속성: `localStorage` → key: `remind-records-v1`
+- 로컬 영속성: `localStorage` → key: `snatty-records-v1`
 - 컴포넌트는 controlled 패턴 유지 (부모가 상태 소유)
 
 ### 2-4. 타입 안전성
@@ -86,7 +86,7 @@ src/app/
 
 ### 3-2. API 레이어
 
-- 프론트엔드 → 서버 통신: `src/app/lib/remindApi.ts` 클라이언트 경유
+- 프론트엔드 → 서버 통신: `src/app/lib/snattyApi.ts` 클라이언트 경유
 - API URL 미설정 시 네트워크 요청 자동 스킵 (로컬 저장은 항상 동작)
 - 네트워크 실패는 UX를 깨지 않아야 함 — graceful degradation 필수
 - 서버 API 경로: `/v1/*` (versioning 유지)
@@ -130,7 +130,7 @@ src/app/
 ### 5-2. 데이터 무결성
 
 - `JournalEntry.body`는 생성 후 수정 불가 (append-only)
-- localStorage 키 `remind-records-v1` 스키마 변경 시 마이그레이션 로직 필수
+- localStorage 키 `snatty-records-v1` 스키마 변경 시 마이그레이션 로직 필수
 - Prisma 마이그레이션은 `migrate dev` → `migrate deploy` 절차 준수
 
 ### 5-3. 디자인 토큰
@@ -185,7 +185,7 @@ npx prisma studio        # DB 관리 UI
 
 | 변수 | 위치 | 필수 여부 | 용도 |
 |------|------|-----------|------|
-| `NEXT_PUBLIC_REMIND_API_URL` | `.env.local` | 선택 | API 서버 주소 (없으면 로컬 전용) |
+| `NEXT_PUBLIC_SNATTY_API_URL` | `.env.local` | 선택 | API 서버 주소 (없으면 로컬 전용) |
 | `NEXT_PUBLIC_DEV_EMAIL` | `.env.local` | 개발 선택 | 개발용 이메일 인증 |
 | `OPENWEATHERMAP_API_KEY` | `.env.local` | 날씨 기능 필수 | OWM API 키 |
 | `KAKAO_REST_API_KEY` | `.env.local` | 선택 | 역지오코딩(시·구·동 단위 한글 지역명) |

@@ -1,5 +1,5 @@
 /**
- * Optional sync to remind-api (Phase 1). If NEXT_PUBLIC_REMIND_API_URL is unset, no network calls.
+ * Optional sync to snatty-api (Phase 1). If NEXT_PUBLIC_SNATTY_API_URL is unset, no network calls.
  * @see server/README.md
  * @see ../../../../docs/auth-token-strategy.md — access token은 메모리만, refresh token은 httpOnly 쿠키.
  */
@@ -25,7 +25,7 @@ class SyncHttpError extends Error {
 }
 
 function baseUrl() {
-  const raw = process.env.NEXT_PUBLIC_REMIND_API_URL?.trim();
+  const raw = process.env.NEXT_PUBLIC_SNATTY_API_URL?.trim();
   return raw ? raw.replace(/\/$/, "") : "";
 }
 
@@ -78,7 +78,7 @@ async function doRefreshRequest(base: string): Promise<boolean> {
  */
 async function runRefresh(base: string): Promise<boolean> {
   if (typeof navigator !== "undefined" && "locks" in navigator) {
-    return await navigator.locks.request("remind-refresh-token", () => doRefreshRequest(base));
+    return await navigator.locks.request("snatty-refresh-token", () => doRefreshRequest(base));
   }
   return doRefreshRequest(base);
 }
@@ -195,10 +195,10 @@ export async function syncPendingRecords(): Promise<void> {
       await markRecordSynced(record.id);
     } catch (e) {
       if (isPermanentlyInvalid(e)) {
-        console.warn("[remind] 기록이 영구적으로 유효하지 않아 건너뜀(재시도 안 함)", e);
+        console.warn("[snatty] 기록이 영구적으로 유효하지 않아 건너뜀(재시도 안 함)", e);
         continue;
       }
-      console.warn("[remind] 미동기화 기록 재시도 실패, 다음 기회에 재시도", e);
+      console.warn("[snatty] 미동기화 기록 재시도 실패, 다음 기회에 재시도", e);
       return;
     }
   }

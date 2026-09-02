@@ -9,7 +9,7 @@
 현재 서버는 `X-Dev-Email` 헤더값을 그대로 `User.email`(unique)로 사용해 `upsert`합니다
 (`server/src/app.ts` `resolveDevEmail()`). 헤더는 검증 없이 클라이언트가 보낸 문자열을
 그대로 신뢰하므로, 지금까지 쌓인 서버 데이터는 전부 **실제 인증되지 않은 placeholder
-이메일**(기본값 `dev@local.invalid`, 또는 `NEXT_PUBLIC_DEV_EMAIL`/`remind-dev-email`
+이메일**(기본값 `dev@local.invalid`, 또는 `NEXT_PUBLIC_DEV_EMAIL`/`snatty-dev-email`
 로컬 오버라이드) 밑에 존재합니다.
 
 `AUTH`가 실 로그인(JWT/OAuth 등)으로 교체되면, 병합이 필요한 데이터는 성격이 다른
@@ -17,7 +17,7 @@
 
 | 갈래 | 현재 위치 | 특징 |
 |---|---|---|
-| **A. 로컬 전용 미동기화 데이터** | 브라우저 `localStorage`(`remind-records-v1`) | `SYNC-LIVE`가 아직 0/8이라 서버에 한 번도 전송된 적 없음. 기기별로 분산. |
+| **A. 로컬 전용 미동기화 데이터** | 브라우저 `localStorage`(`snatty-records-v1`) | `SYNC-LIVE`가 아직 0/8이라 서버에 한 번도 전송된 적 없음. 기기별로 분산. |
 | **B. Dev-placeholder 서버 데이터** | 서버 `User`(`email = dev@local.invalid` 등) 하위 `JournalEntry` | 실제 개발 중 테스트로 쌓인 데이터. 실사용자 신원과 연결된 적이 없음. |
 
 두 갈래는 병합 시점과 방법이 다르므로 아래에서 분리해 다룹니다.
@@ -35,7 +35,7 @@
 3. 미동기화 기록을 순서대로 `POST /v1/entries/quick`에 전송 — 이때 인증 헤더는
    **새 실사용자 identity**(JWT)를 사용하므로, 서버에는 자동으로 실사용자 `User` 밑에
    생성됨. 기존 `clientMutationId` 멱등 로직을 그대로 재사용 가능(서버 코드 변경 불필요).
-4. 각 건 성공 시 `markRecordSynced(id)` 호출. 실패 시 [`syncPendingRecords()`](../src/app/lib/remindApi.ts)의
+4. 각 건 성공 시 `markRecordSynced(id)` 호출. 실패 시 [`syncPendingRecords()`](../src/app/lib/snattyApi.ts)의
    기존 "첫 실패 시 중단, 다음 기회에 재시도" 정책을 그대로 따름.
 5. 업로드 도중 앱이 종료돼도 `synced` 플래그가 idempotency key 역할을 하므로 재개 가능 —
    추가 상태 관리 불필요.
@@ -72,7 +72,7 @@
    중복 `clientMutationId`를 걸러내고 최신 것만 유지.
 
 **전략 (비권장이지만 기록해둠 — 완전 자동 병합):** 로그인 시점의 브라우저에 남아있는
-`remind-dev-email` localStorage 값을 읽어 그 값과 동일한 서버 `User`를 자동으로 실사용자
+`snatty-dev-email` localStorage 값을 읽어 그 값과 동일한 서버 `User`를 자동으로 실사용자
 계정에 병합. 구현은 간단하지만, 공유 기기·브라우저 프로필 재사용 시 **다른 사람의 dev
 테스트 데이터가 조용히 병합될 위험**이 있어 권장하지 않음. §2에서 이미 로컬 미동기화
 데이터는 커버되므로, 서버 쪽 재소유까지 자동화할 실익도 크지 않음.

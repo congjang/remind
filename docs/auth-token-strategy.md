@@ -5,14 +5,14 @@
 
 ## 1. 왜 지금 결정해야 하는가
 
-AUTH는 라우트 4종(signup/login/refresh/logout)과 클라이언트 토큰 저장 로직(`remindApi.ts`)을
+AUTH는 라우트 4종(signup/login/refresh/logout)과 클라이언트 토큰 저장 로직(`snattyApi.ts`)을
 아직 하나도 구현하지 않은 상태입니다. 토큰을 어디에 저장하느냐가 로그인/리프레시 응답
 형태(쿠키 세팅 여부), CORS 설정(`credentials`), 클라이언트 fetch 옵션을 전부 좌우하므로
 라우트 코드를 먼저 짜고 나중에 저장 방식을 바꾸면 전면 재작업이 됩니다.
 
 ## 2. 아키텍처 제약
 
-- **웹**: Next.js 프론트(`NEXT_PUBLIC_REMIND_API_URL`)와 Fastify API가 **다른 오리진**(별도
+- **웹**: Next.js 프론트(`NEXT_PUBLIC_SNATTY_API_URL`)와 Fastify API가 **다른 오리진**(별도
   포트/도메인)으로 이미 CORS 통신 중 (`server/src/app.ts` `@fastify/cors`).
 - **네이티브(예정)**: `CLAUDE.md` §1 기준 미래 `native/` 클라이언트가 같은 API 서버를 공유.
   네이티브 앱은 브라우저 쿠키 저장소가 없으므로, **쿠키만으로는 네이티브를 지원할 수 없음** —
@@ -41,7 +41,7 @@ AUTH는 라우트 4종(signup/login/refresh/logout)과 클라이언트 토큰 �
 - **Refresh token** (불투명 랜덤 문자열, TTL 30일, DB에 해시로 저장 — §5):
   - **웹**: `httpOnly; Secure; SameSite=Lax` 쿠키로만 전달 — JS가 절대 값을 읽을 수 없어
     XSS로 탈취 불가능. `SameSite=Lax`로 충분한 이유: 프론트·API가 같은 등록 도메인
-    (eTLD+1, 예: `app.remind.com`/`api.remind.com`)에 배포된다는 전제 하에 이는 same-site
+    (eTLD+1, 예: `app.snatty.com`/`api.snatty.com`)에 배포된다는 전제 하에 이는 same-site
     요청이라 쿠키가 정상 첨부되고, 제3자 사이트의 CSRF 요청에는 첨부되지 않음 — 별도
     CSRF 토큰 인프라 없이 시작 가능(도메인이 분리 배포된다면 이 가정을 재검토).
   - **네이티브(예정)**: 쿠키 저장소가 없으므로 로그인/리프레시 응답 **바디**에도 refresh
@@ -65,5 +65,5 @@ AUTH는 라우트 4종(signup/login/refresh/logout)과 클라이언트 토큰 �
 - `POST /v1/auth/logout` → 해당 refresh token DB row `revokedAt` 처리 + 쿠키 삭제
 - CORS: `credentials: true` + 오리진 명시 필요(현재 프로덕션은 이미 `CORS_ORIGIN` 환경변수로
   제한 중이라 추가 변경 없이 호환)
-- 클라이언트(`remindApi.ts`): 모든 API 호출에 `credentials: "include"` 추가, access token은
+- 클라이언트(`snattyApi.ts`): 모든 API 호출에 `credentials: "include"` 추가, access token은
   모듈 스코프 변수(메모리)에 보관하고 401 수신 시 `/v1/auth/refresh` 1회 시도 후 재요청
