@@ -1,3 +1,8 @@
+// 다른 어떤 import보다도 먼저 — Sentry가 늦게 초기화되면 그 전에 로드되는
+// 모듈의 에러를 못 잡을 수 있다(server/src/sentry.ts 참고).
+import { initSentry } from "./sentry.js";
+initSentry();
+
 import { buildApp } from "./app.js";
 
 // ─── 시작 시 필수 환경변수 가드 ────────────────────────────────────────────

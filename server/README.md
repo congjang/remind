@@ -71,9 +71,11 @@ npm run db:restore -- ./backups/snatty-db-<timestamp>.dump
 ```
 
 - Requires `pg_dump`/`pg_restore` on the machine running the script (`brew install libpq` on macOS, `apt install postgresql-client` on Debian/Ubuntu). Reads `DATABASE_URL` from `.env` if not already set in the environment.
-- **Railway does not back up the managed Postgres add-on by default** — this is a separate, independent safety net regardless of plan. Confirm in the Railway dashboard (Database → Backups) whether your plan includes automated snapshots; if it does, treat `db:backup` as a second line of defense, not a replacement.
-- Not yet automated — running it is a manual step. To automate: a scheduled GitHub Action (`schedule:` cron trigger) calling this script against the production `DATABASE_URL`, or a Railway cron service running the same command, are the two lowest-effort options. Neither is wired up yet.
+- **`pg_dump`'s version must be ≥ the target server's major version, or it refuses to run** (`pg_dump: error: aborting because of server version mismatch`). Confirmed 2026-09-06: our Neon instance runs Postgres 18, so `pg_dump`/`pg_restore` 16.x (e.g. the `postgres:16-alpine` image) fails against it — use a 18.x client. Check server version with `psql "$DATABASE_URL" -c 'select version();'` if backups start failing after a Neon upgrade.
+- **Neon does not back up the free-tier Postgres by default** — this is a separate, independent safety net regardless of plan. Confirm in the Neon dashboard whether your plan includes point-in-time recovery/automated snapshots; if it does, treat `db:backup` as a second line of defense, not a replacement.
+- Not yet automated — running it is a manual step. To automate: a scheduled GitHub Action (`schedule:` cron trigger) calling this script against the production `DATABASE_URL` is the lowest-effort option. Not wired up yet.
 - `./backups/` is gitignored — dumps contain real user data and must never be committed.
+- **Restore rehearsal (2026-09-06)**: ran the real `backup-db.sh`/`restore-db.sh` end-to-end against an isolated local Postgres (seed data → backup → wipe the DB entirely → restore → confirmed every row came back byte-for-byte, including a soft-deleted entry's `deleted` flag) — not against the live Neon DB, to avoid any production risk. Separately confirmed `backup-db.sh` itself succeeds against the actual production `DATABASE_URL` (read-only `pg_dump`, immediately deleted the output). See `docs/PROGRESS_CHECKLIST.md` § DATA-INTEGRITY for the full write-up.
 
 ## Connecting the Next.js frontend
 

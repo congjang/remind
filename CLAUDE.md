@@ -193,6 +193,9 @@ npx prisma studio        # DB 관리 UI
 | `JWT_SECRET` | `server/.env` | 서버 필수 | 액세스 토큰 서명 키 (미설정 시 서버 기동 실패) |
 | `GOOGLE_CLIENT_ID` | `server/.env` | 소셜 로그인 선택 | `POST /v1/auth/social`의 Google identityToken aud 검증 |
 | `APPLE_CLIENT_ID` | `server/.env` | 소셜 로그인 선택 | `POST /v1/auth/social`의 Apple identityToken aud 검증 |
+| `NEXT_PUBLIC_SENTRY_DSN` | `.env.local` | 선택 | 프론트엔드 에러 추적(Sentry), 미설정 시 no-op |
+| `SENTRY_DSN` | `server/.env` | 선택 | 서버 에러 추적(Sentry), 미설정 시 no-op |
+| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | `.env.local` | 선택 | 빌드 시 소스맵 업로드용, 없어도 빌드 성공 |
 
 ---
 

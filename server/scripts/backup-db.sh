@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # server/prisma/schema.prisma의 실사용자 데이터(User·JournalEntry 등)를 pg_dump로 백업.
-# Railway 등 매니지드 호스팅의 자동 백업 여부와 무관하게 동작하는 독립적인 방어선.
+# Neon 등 매니지드 호스팅의 자동 백업 여부와 무관하게 동작하는 독립적인 방어선.
+#
+# pg_dump는 클라이언트 버전이 대상 서버 버전보다 낮으면 무조건 실행을 거부한다
+# ("server version mismatch"). 대상 Postgres가 업그레이드되면 이 스크립트를 실행할
+# 머신의 pg_dump도 그 버전 이상으로 맞춰야 한다 — `psql "$DATABASE_URL" -c 'select version();'`
+# 로 서버 버전 확인 가능(server/README.md § Database backups 참고, 2026-09-06 실제로
+# 16.x pg_dump로 Postgres 18 Neon을 백업하려다 이 에러로 막힌 걸 리허설 중 발견).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

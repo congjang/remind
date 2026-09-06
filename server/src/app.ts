@@ -28,6 +28,7 @@ import {
   SocialAuthConfigError,
   SocialAuthVerificationError,
 } from "./socialAuth.js";
+import { captureException } from "./sentry.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -208,6 +209,9 @@ export async function buildApp(deps?: {
 
     const statusCode = error.statusCode ?? 500;
     if (statusCode >= 500) {
+      // 예상 못한 서버 에러만 Sentry로 보낸다 — 4xx(검증 실패·인증 실패 등)는
+      // 정상적인 요청 처리 결과라 노이즈만 늘림. SENTRY_DSN 미설정 시 no-op.
+      captureException(error);
       return reply.code(500).send({ error: "internal_server_error" });
     }
 

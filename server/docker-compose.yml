@@ -1,6 +1,9 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # 프로덕션(Neon)이 Postgres 18을 쓰므로 로컬도 맞춘다 — pg_dump/pg_restore는
+    # 클라이언트 버전이 서버 버전보다 낮으면 아예 실행을 거부한다(2026-09-06
+    # 백업 리허설 중 16.x로 Neon을 덤프하려다 실제로 이 에러로 발견).
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: snatty
       POSTGRES_PASSWORD: snatty
